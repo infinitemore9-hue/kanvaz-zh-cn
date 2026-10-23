@@ -147,8 +147,8 @@ if (fs.existsSync(path.join(__dirname, 'verify-release-test.js'))) {
     console.log(e.stdout || e.message);
   }
   var buildYml = fs.readFileSync(path.join(__dirname, '..', '.github', 'workflows', 'build.yml'), 'utf8');
-  if (/verify-release:/.test(buildYml) && /tools\/verify-release\.js/.test(buildYml)) ok('build.yml still runs tools/verify-release.js against the draft');
-  else bad('build.yml no longer has the verify-release job — release assets are unchecked again');
+  if (/workflow_dispatch:/.test(buildYml) && /contents: read/.test(buildYml) && !/--publish always/.test(buildYml) && JSON.parse(fs.readFileSync(path.join(ROOT,'package.json'),'utf8')).build.publish === null) ok('unofficial fork uses manual publication and has no upstream publishing target');
+  else bad('unofficial publication configuration is inconsistent');
 } else {
   console.log('  (skipped — test/verify-release-test.js missing)');
 }

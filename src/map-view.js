@@ -1550,6 +1550,7 @@ var KanvazMapView = (function() {
 
     var nameEl = document.createElement('div');
     nameEl.className = 'map-node-name';
+    nameEl.setAttribute('data-user-content', 'true');
     nameEl.style.cssText = 'font-size:12px;font-weight:600;font-family:var(--font-ui);color:var(--color-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;';
     nameEl.textContent = card.name || 'Untitled';
     /* Double-click the name specifically to rename — the node's own

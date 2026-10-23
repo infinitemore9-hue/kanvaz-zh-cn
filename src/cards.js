@@ -161,7 +161,7 @@ var KanvazCards = (function() {
          canvas.js's own mousedown handler on the ancestor `container`,
          which is where the actual pan starts (see its matching
          `e.altKey` branch in shouldPan). */
-      if (e.altKey) return;
+      if (e.altKey || (typeof KanvazCanvas !== 'undefined' && KanvazCanvas.isSpacePanActive && KanvazCanvas.isSpacePanActive())) return;
 
       /* Resize handle */
       if (target.classList.contains('resize-handle')) {
@@ -335,13 +335,14 @@ var KanvazCards = (function() {
        stay single-card-only (groupOrigins is null otherwise): snapping
        each member independently mid-group-move would distort the
        group's relative spacing rather than preserve it. */
+    var snapState = {};
     var groupOrigins = null;
     if (multiSelectedIds.length > 1 && multiSelectedIds.indexOf(card.id) !== -1) {
       groupOrigins = {};
       for (var gi = 0; gi < multiSelectedIds.length; gi++) {
         var gid = multiSelectedIds[gi];
         var gcard = cards[gid];
-        if (gcard) groupOrigins[gid] = { x: gcard.x, y: gcard.y };
+        if (gcard && !gcard.pinned) groupOrigins[gid] = { x: gcard.x, y: gcard.y };
       }
     }
 
@@ -361,6 +362,15 @@ var KanvazCards = (function() {
       el.dataset.justDragged = '1';
 
       if (groupOrigins) {
+        var moving = Object.keys(groupOrigins).filter(function(id) { return !!cards[id]; });
+        var minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (var mid of moving) { var mc = cards[mid], mo = groupOrigins[mid], mb=getCardSnapBox(mc,mo.x,mo.y,mc.w,mc.h); minX = Math.min(minX, mb.x); minY = Math.min(minY, mb.y); maxX = Math.max(maxX, mb.x + mb.w); maxY = Math.max(maxY, mb.y + mb.h); }
+        var gs = typeof KanvazUI_Extended !== 'undefined' ? KanvazUI_Extended.getSettings() : {};
+        if (moving.length && gs.edgeSnapEnabled !== false && !gs.gridSnapEnabled) {
+          var groupSnap = findAlignmentSnap(moving, minX + dx, minY + dy, maxX - minX, maxY - minY, snapState);
+          if (groupSnap.x !== null) { dx = groupSnap.x - minX; showAlignGuideV(groupSnap.guideX); } else if (alignGuideV) alignGuideV.style.display = 'none';
+          if (groupSnap.y !== null) { dy = groupSnap.y - minY; showAlignGuideH(groupSnap.guideY); } else if (alignGuideH) alignGuideH.style.display = 'none';
+        } else hideAlignGuides();
         for (var id in groupOrigins) {
           var gcard = cards[id];
           var gel = document.getElementById(id);
@@ -381,8 +391,8 @@ var KanvazCards = (function() {
          position round to" answers, and letting them compete card-by-card
          would make drags feel unpredictable rather than helpful. */
       var gridSettings = (typeof KanvazUI_Extended !== 'undefined') ? KanvazUI_Extended.getSettings() : null;
-      if (!gridSettings || !gridSettings.gridSnapEnabled) {
-        var snap = findAlignmentSnap(card.id, nx, ny, card.w, card.h);
+      if (!gridSettings || (!gridSettings.gridSnapEnabled && gridSettings.edgeSnapEnabled !== false)) {
+        var snap = findAlignmentSnap(card.id, nx, ny, card.w, card.h, snapState);
         if (snap.x !== null) { nx = snap.x; showAlignGuideV(snap.guideX); }
         else if (alignGuideV) alignGuideV.style.display = 'none';
         if (snap.y !== null) { ny = snap.y; showAlignGuideH(snap.guideY); }
@@ -400,6 +410,8 @@ var KanvazCards = (function() {
     function onUp() {
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('blur', onCancel);
       hideAlignGuides();
       if (moved) {
         KanvazApp.markDirty();
@@ -415,6 +427,24 @@ var KanvazCards = (function() {
       }
     }
 
+    function onCancel() {
+      var origins = groupOrigins || {};
+      if (!groupOrigins) origins[card.id] = {x:origX,y:origY};
+      for (var id in origins) {
+        var c = cards[id], element = document.getElementById(id);
+        if (!c || !element) continue;
+        c.x = origins[id].x; c.y = origins[id].y;
+        element.style.left = c.x + 'px'; element.style.top = c.y + 'px';
+        emitCardEvent('cardUpdate', c);
+      }
+      moved = false;
+      onUp();
+    }
+    function onKey(ev) {
+      if (ev.key === 'Escape') { ev.preventDefault(); ev.stopImmediatePropagation(); onCancel(); }
+    }
+    window.addEventListener('keydown', onKey, true);
+    window.addEventListener('blur', onCancel);
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', onUp);
   }
@@ -431,12 +461,12 @@ var KanvazCards = (function() {
   var alignGuideH = null;
 
   function ensureAlignGuides() {
-    if (!alignGuideV) {
+    if (!alignGuideV || !alignGuideV.isConnected) {
       alignGuideV = document.createElement('div');
       alignGuideV.className = 'align-guide align-guide-v';
       world.appendChild(alignGuideV);
     }
-    if (!alignGuideH) {
+    if (!alignGuideH || !alignGuideH.isConnected) {
       alignGuideH = document.createElement('div');
       alignGuideH.className = 'align-guide align-guide-h';
       world.appendChild(alignGuideH);
@@ -446,13 +476,15 @@ var KanvazCards = (function() {
   function showAlignGuideV(x) {
     ensureAlignGuides();
     alignGuideV.style.left = x + 'px';
-    alignGuideV.style.display = '';
+    alignGuideV.style.width = (1 / KanvazCanvas.getScale()) + 'px';
+    alignGuideV.style.display = 'block';
   }
 
   function showAlignGuideH(y) {
     ensureAlignGuides();
     alignGuideH.style.top = y + 'px';
-    alignGuideH.style.display = '';
+    alignGuideH.style.height = (1 / KanvazCanvas.getScale()) + 'px';
+    alignGuideH.style.display = 'block';
   }
 
   function hideAlignGuides() {
@@ -460,39 +492,61 @@ var KanvazCards = (function() {
     if (alignGuideH) alignGuideH.style.display = 'none';
   }
 
-  function findAlignmentSnap(excludeId, x, y, w, h) {
-    var candidatesX = [x, x + w / 2, x + w];
-    var candidatesY = [y, y + h / 2, y + h];
-    var bestXDelta = ALIGN_THRESHOLD, bestX = null, bestXGuide = null;
-    var bestYDelta = ALIGN_THRESHOLD, bestY = null, bestYGuide = null;
+  function getCardSnapBox(c,x,y,w,h) {
+    var settings=typeof KanvazUI_Extended!=='undefined'?KanvazUI_Extended.getSettings():{};
+    var el=document.getElementById(c.id);
+    if(el) KanvazAlphaGeometry.decorate(c,el);
+    return settings.snapToVisibleContent!==false ? KanvazAlphaGeometry.project(c,x,y,w,h) : {x:x,y:y,w:w,h:h};
+  }
+  function findAlignmentSnap(excludeId, x, y, w, h, state) {
+    state = state || {};
+    var box = typeof excludeId==='string' && cards[excludeId] ? getCardSnapBox(cards[excludeId],x,y,w,h) : {x:x,y:y,w:w,h:h};
+    var candidatesX = [box.x, box.x + box.w / 2, box.x + box.w];
+    var candidatesY = [box.y, box.y + box.h / 2, box.y + box.h];
+    var settings = typeof KanvazUI_Extended !== 'undefined' ? KanvazUI_Extended.getSettings() : {};
+    var threshold = (Number(settings.edgeSnapDistance) || 12) / KanvazCanvas.getScale();
+    var bestXDelta = threshold, bestX = null, bestXGuide = null;
+    var bestYDelta = threshold, bestY = null, bestYGuide = null;
 
+    var xTarget = null, yTarget = null;
     for (var id in cards) {
-      if (id === excludeId) continue;
+      if (id === excludeId || (Array.isArray(excludeId) && excludeId.indexOf(id) !== -1)) continue;
       var c = cards[id];
-      var edgesX = [c.x, c.x + c.w / 2, c.x + c.w];
-      var edgesY = [c.y, c.y + c.h / 2, c.y + c.h];
+      if (c.hidden || (c._alphaBounds && c._alphaBounds.empty)) continue;
+      var target=getCardSnapBox(c,c.x,c.y,c.w,c.h);
+      var nearbyX=box.y <= target.y+target.h+64/KanvazCanvas.getScale() && box.y+box.h >= target.y-64/KanvazCanvas.getScale();
+      var nearbyY=box.x <= target.x+target.w+64/KanvazCanvas.getScale() && box.x+box.w >= target.x-64/KanvazCanvas.getScale();
+      var edgesX = [target.x, target.x + target.w / 2, target.x + target.w];
+      var edgesY = [target.y, target.y + target.h / 2, target.y + target.h];
       var i, j, d;
       for (i = 0; i < candidatesX.length; i++) {
         for (j = 0; j < edgesX.length; j++) {
+          if (!nearbyX || ((i===1)!==(j===1))) continue;
           d = Math.abs(candidatesX[i] - edgesX[j]);
           if (d < bestXDelta) {
             bestXDelta = d;
             bestX = x + (edgesX[j] - candidatesX[i]);
-            bestXGuide = edgesX[j];
+            bestXGuide = edgesX[j]; xTarget = id;
           }
         }
       }
       for (i = 0; i < candidatesY.length; i++) {
         for (j = 0; j < edgesY.length; j++) {
+          if (!nearbyY || ((i===1)!==(j===1))) continue;
           d = Math.abs(candidatesY[i] - edgesY[j]);
           if (d < bestYDelta) {
             bestYDelta = d;
             bestY = y + (edgesY[j] - candidatesY[i]);
-            bestYGuide = edgesY[j];
+            bestYGuide = edgesY[j]; yTarget = id;
           }
         }
       }
     }
+    var release = threshold * 1.75;
+    if (state.x && cards[state.x.target] && !cards[state.x.target].hidden && Math.abs(x - state.x.position) <= release && Math.abs(box.y-cards[state.x.target].y)<box.h+cards[state.x.target].h+64/KanvazCanvas.getScale()) { bestX = state.x.position; bestXGuide = state.x.guide; xTarget = state.x.target; }
+    if (state.y && cards[state.y.target] && !cards[state.y.target].hidden && Math.abs(y - state.y.position) <= release && Math.abs(box.x-cards[state.y.target].x)<box.w+cards[state.y.target].w+64/KanvazCanvas.getScale()) { bestY = state.y.position; bestYGuide = state.y.guide; yTarget = state.y.target; }
+    state.x = bestX === null ? null : {position:bestX, guide:bestXGuide, target:xTarget};
+    state.y = bestY === null ? null : {position:bestY, guide:bestYGuide, target:yTarget};
     return { x: bestX, guideX: bestXGuide, y: bestY, guideY: bestYGuide };
   }
 
@@ -874,6 +928,7 @@ var KanvazCards = (function() {
      something forgotten. selectionChange fires from selectCard/
      selectAll/deselectAll/setMultiSelection below. */
   function emitCardEvent(type, card) {
+    if (type==='cardUpdate' && card && card.type==='image') { var ae=document.getElementById(card.id); if(ae) KanvazAlphaGeometry.decorate(card,ae); }
     /* Bug fix: catches every existing (and future) 'cardUpdate' call
        site in one place — see refreshPropertiesIfOpen()'s own comment
        below for the actual bug this closes (Properties panel going
@@ -1707,6 +1762,7 @@ var KanvazCards = (function() {
       removeSkeleton(el);
       var meta = el.querySelector('.card-bar-meta');
       if (meta) meta.textContent = 'Image · ' + img.naturalWidth + ' × ' + img.naturalHeight;
+      try { card._alphaBounds = /^data:image\/jpeg[;,]/i.test(img.src) ? null : KanvazAlphaGeometry.extract(img); KanvazAlphaGeometry.decorate(card,el); } catch (e) { console.warn('[Alpha bounds]',e.message); }
     };
     img.onerror = function() {
       removeSkeleton(el);
@@ -1736,6 +1792,7 @@ var KanvazCards = (function() {
     var b = (card.adjustBrightness != null) ? card.adjustBrightness : 100;
     var c = (card.adjustContrast != null) ? card.adjustContrast : 100;
     var s = (card.adjustSaturate != null) ? card.adjustSaturate : 100;
+    if (b === 100 && c === 100 && s === 100) return 'none';
     return 'brightness(' + b + '%) contrast(' + c + '%) saturate(' + s + '%)';
   }
 
@@ -6192,6 +6249,8 @@ var KanvazCards = (function() {
       adjustBrightness: c.adjustBrightness !== undefined ? c.adjustBrightness : null,
       adjustContrast:   c.adjustContrast   !== undefined ? c.adjustContrast   : null,
       adjustSaturate:   c.adjustSaturate   !== undefined ? c.adjustSaturate   : null,
+      referenceGray: !!c.referenceGray,
+      referenceSavedSaturate: c.referenceSavedSaturate != null ? c.referenceSavedSaturate : 100,
       /* v7.x — persistent card grouping (Ctrl+G/Ctrl+Shift+G). */
       groupId:      c.groupId      || null,
       /* v7.x — Layers panel visibility toggle (distinct from Isolate
@@ -7436,6 +7495,63 @@ var KanvazCards = (function() {
   }
 
   return {
+    relinkImage: relinkCard,
+    relinkReferenceImages: function(updates) {
+      var changed = false;
+      for (var u of updates) {
+        var c = cards[u.id];
+        if (!c || c !== u.expected || c.path !== u.expectedPath || !/^(image|gif)$/.test(c.type)) continue;
+        c.path = u.path;
+        c.dataUrl = u.dataUrl; c.naturalW = u.naturalW; c.naturalH = u.naturalH;
+        var el = document.getElementById(c.id), img = el && el.querySelector('img');
+        if (img) { img.src = u.dataUrl; img._origSrc = u.dataUrl; }
+        emitCardEvent('cardUpdate', c);
+        changed = true;
+      }
+      if (changed) { KanvazApp.markDirty(); KanvazHistory.push(); }
+    },
+    applyReferenceEdits: function(edits) {
+      var changed = false;
+      for (var patch of edits) {
+        var c = cards[patch.id];
+        if (!c || c.pinned) continue;
+        var cardChanged = false;
+        for (var key of ['x','y','w','h','adjustSaturate','adjustBrightness','adjustContrast','flipH','flipV','referenceGray','referenceSavedSaturate']) {
+          if (!Object.prototype.hasOwnProperty.call(patch, key)) continue;
+          var value = patch[key];
+          if (key === 'flipH' || key === 'flipV' || key === 'referenceGray') value = !!value;
+          else if (!Number.isFinite(value) || ((key === 'w' || key === 'h') && value < 80 - 0.000001)) continue;
+          if (key === 'w' || key === 'h') value = Math.max(80, value);
+          if (c[key] !== value) { c[key] = value; changed = true; cardChanged = true; }
+        }
+        if (!cardChanged) continue;
+        var el = document.getElementById(c.id);
+        if (el) {
+          el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
+          el.style.width = c.w + 'px'; el.style.height = c.h + 'px';
+          var media = el.querySelector('img');
+          if (media) media.style.filter = getFilterCss(c);
+          var transform = !c.flipH && !c.flipV ? 'none' : 'scale(' + (c.flipH ? -1 : 1) + ',' + (c.flipV ? -1 : 1) + ')';
+          if (media) media.style.transform = transform;
+          var overlay = el.querySelector('.annotation-canvas');
+          if (overlay) overlay.style.transform = transform;
+          if (typeof KanvazAnnotate !== 'undefined') KanvazAnnotate.resize(c.id, c.w, c.h);
+        }
+        emitCardEvent('cardUpdate', c);
+      }
+      if (changed) { KanvazApp.markDirty(); KanvazHistory.push(); }
+      return changed;
+    },
+    refreshLinkedImage: function(id, dataUrl, w, h) {
+      var c = cards[id];
+      if (!c || !/^(image|gif)$/.test(c.type) || c.dataUrl === dataUrl) return;
+      c.dataUrl = dataUrl;
+      c.naturalW = w; c.naturalH = h;
+      var el = document.getElementById(id);
+      var img = el && el.querySelector('img');
+      if (img) { img.src = dataUrl; img._origSrc = dataUrl; }
+      KanvazApp.markDirty();
+    },
     init:              init,
     createFromMedia:   createFromMedia,
     createFromDataUrl: createFromDataUrl,

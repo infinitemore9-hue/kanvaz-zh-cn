@@ -155,6 +155,7 @@ var KanvazBoards = (function() {
 
         var nameSpan = document.createElement('span');
         nameSpan.textContent = boards[idx].name;
+    nameSpan.setAttribute('data-user-content', 'true');
         nameSpan.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:13px;';
         row.appendChild(nameSpan);
 
@@ -326,6 +327,7 @@ var KanvazBoards = (function() {
 
         var label = document.createElement('span');
         label.textContent = folder.name;
+    label.setAttribute('data-user-content', 'true');
         label.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;';
         row.appendChild(label);
 
@@ -1688,7 +1690,7 @@ var KanvazBoards = (function() {
 
       if (!manual && typeof KanvazUI_Extended !== 'undefined') {
         var s = KanvazUI_Extended.getSettings();
-        if (s && s.openOnStartup === false) { startupScreenOpening = false; return; }
+        if (s && (s.openOnStartup === false || s.simpleWorkspace !== false)) { startupScreenOpening = false; return; }
       }
 
       /* v7.x — Home Screen redesign. Direct feedback: "where is start
@@ -2191,6 +2193,7 @@ var KanvazBoards = (function() {
             var fnameEl = document.createElement('div');
             fnameEl.style.cssText = 'font-size:13px;color:var(--color-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px;';
             fnameEl.textContent = fname;
+    fnameEl.setAttribute('data-user-content', 'true');
             textCol.appendChild(fnameEl);
 
             var metaEl = document.createElement('div');
@@ -2411,3 +2414,4 @@ var KanvazBoards = (function() {
    requiring this file is safe. */
 if (typeof window !== 'undefined') { window.KanvazBoards = KanvazBoards; }
 if (typeof module !== 'undefined' && module.exports) { module.exports = KanvazBoards; }
+

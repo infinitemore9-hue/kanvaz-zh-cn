@@ -34,3 +34,23 @@ test/node_modules/
 /upi-qr.jpeg
 /download.jpe
 /docs/handoff-assets/donate-rollout/
+
+# Local development, private data and release attachments
+/temp/
+/electron-runtime/
+/publish/
+/.planning/
+/output*/
+/.release-build/
+*.kanvaz
+*.pur
+*.env
+.env*
+!.env.example
+*.pem
+*.key
+*.pfx
+*.p12
+*.sqlite*
+*.db
+*.dmp

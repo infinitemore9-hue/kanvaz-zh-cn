@@ -16,6 +16,10 @@ var webUtils = require('electron').webUtils;
 var hasStartupFileArg = process.argv.indexOf('--kanvaz-has-startup-file=1') !== -1;
 
 contextBridge.exposeInMainWorld('KanvazBridge', {
+  setUiLanguage: function(lang) { ipcRenderer.send('ui-language', lang); },
+  scanLiveImages: function(paths) { return ipcRenderer.invoke('live-images-scan', paths); },
+  liveImageStatus: function(paths) { return ipcRenderer.invoke('live-images-status', paths); },
+  openSourceFolder: function() { return ipcRenderer.invoke('live-images-folder'); },
 
   /* Launch info */
   hasStartupFile:  function() { return hasStartupFileArg; },

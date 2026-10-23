@@ -1,0 +1,13 @@
+PASS direct overwrite; positions and sizes unchanged
+PASS other images unchanged
+PASS atomic replacement; positions and sizes unchanged
+PASS invalid source exposes failure status and preserves old pixels
+PASS source manager displays localized decode-failure status
+PASS delete, invalid write, recovery; positions and sizes unchanged
+PASS Chinese / English switch
+PASS all three rendered image sources updated
+PASS successful refresh status includes timestamp for each card
+PASS source manager displays localized success and last-update time
+dictionary entries 914
+ALL LIVE TESTS PASSED
+

@@ -1,0 +1,13 @@
+
+=== Kanvaz Static Lint ===
+
+WARNINGS (5):
+  [warn]  app.js:743 — possible stale version "3.7.5" (current is 9.8.2)
+  [warn]  boards.js:325 — possible stale version "3.7.5" (current is 9.8.2)
+  [warn]  official-plugins/theme-creator/main.js:32 — hardcoded dark color #0E0E10 — use a CSS variable for theme support
+  [warn]  official-plugins/theme-creator/main.js:32 — hardcoded dark color #1A1A22 — use a CSS variable for theme support
+  [warn]  official-plugins/theme-creator/main.js:107 — hardcoded dark color #0E0E10 — use a CSS variable for theme support
+
+Summary: 0 errors, 5 warnings.
+
+

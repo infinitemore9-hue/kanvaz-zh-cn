@@ -158,7 +158,9 @@ var KanvazUI_Extended = (function() {
        minor blending — sprite/tilemap alignment). Direct request:
        "3 types of grid... 3d, game dev and reference normal one." */
     gridStyle:        'reference',
-    openOnStartup:    true,
+    openOnStartup:    false,
+    simpleWorkspace: true,
+    autoArrangeImport: true,
     confirmDelete:    false,
     defaultCardW:     600,
     animationsOn:     true,
@@ -177,8 +179,14 @@ var KanvazUI_Extended = (function() {
     smartSearchEnabled: false,
     doubleClickCreatesNote: false,
     leftDragPan:      true,
+    leftDragSelect:   true,
     autoHideChrome:   false,
     gridSnapEnabled:  false,
+    edgeSnapEnabled: true,
+    snapToVisibleContent: true,
+    transparencyGrid: true,
+    edgeSnapDistance: 12,
+    strongSnapV1: true,
     gridSnapIncrement: 'minor',
     devShowFPS:       false,
     devShowIds:       false,
@@ -268,6 +276,7 @@ var KanvazUI_Extended = (function() {
             if (SETTINGS_DEFAULTS.hasOwnProperty(k)) settings[k] = loaded[k];
           }
           settings._version = SETTINGS_VERSION;
+          if (!loaded.strongSnapV1) { settings.edgeSnapDistance = 12; settings.strongSnapV1 = true; migrated = true; }
           applySettings();
           /* Persist migrated settings so migration only runs once */
           if (migrated) {
@@ -308,6 +317,10 @@ var KanvazUI_Extended = (function() {
   }
 
   function applySettings() {
+    document.body.classList.toggle('show-transparency-grid',settings.transparencyGrid!==false);
+    document.body.classList.toggle('simple-workspace', settings.simpleWorkspace !== false);
+    var modeButton = document.getElementById('simple-workspace-toggle');
+    if (modeButton) modeButton.textContent = settings.simpleWorkspace !== false ? 'Full interface' : 'Simple interface';
     /* v7.x redesign — the side panel's open/section state is read once
        at KanvazSidePanel.init() time, which runs synchronously right
        after loadSettings() kicks off its OWN async IPC read — meaning
@@ -602,7 +615,7 @@ var KanvazUI_Extended = (function() {
   var SETTINGS_SEARCH_INDEX = [
     'Theme', 'Show minimap', 'Grid lines', 'Grid style', 'Card shadows', 'Animations',
     'Show Home Screen on startup', 'Confirm before delete',
-    'Left-drag empty canvas to pan', 'Auto-hide toolbar (hover top edge to reveal)',
+    'Left-drag empty canvas to select', 'Auto-hide toolbar (hover top edge to reveal)',
     'Double-click canvas creates note', 'Snap to grid (move & resize)', 'Snap increment',
     'Always on top (default: on)', 'Autosave (seconds)', 'Default card width (px)',
     'Smart Search (on-device NLP, off by default)'
@@ -692,7 +705,9 @@ var KanvazUI_Extended = (function() {
     lastSettingsContainer = container;
 
     var panel = document.createElement('div');
-    panel.style.cssText = 'padding:0 16px 16px;';
+    panel.style.cssText = 'padding:0 20px 20px;';
+    panel.className = 'polish-settings';
+    if (window.KanvazLocalization && KanvazLocalization.mountLanguageSettings) KanvazLocalization.mountLanguageSettings(panel);
 
     var themeOptions = [['dark', 'Dark'], ['light', 'Light']];
     if (typeof KanvazPluginAPI !== 'undefined' && KanvazPluginAPI._getAllThemes) {
@@ -704,6 +719,8 @@ var KanvazUI_Extended = (function() {
 
     var rows = [
       { section: 'Appearance' },
+      { key:'simpleWorkspace', label:'Simple workspace', type:'toggle' },
+      { key:'autoArrangeImport', label:'Arrange imported files automatically', type:'toggle' },
       { key: 'theme',           label: 'Theme',                 type: 'select', options: themeOptions },
       { key: 'showMinimap',     label: 'Show minimap',          type: 'toggle' },
       { key: 'dotGridVisible',  label: 'Grid lines',            type: 'toggle' },
@@ -718,9 +735,13 @@ var KanvazUI_Extended = (function() {
       { key: 'openOnStartup',   label: 'Show Home Screen on startup', type: 'toggle' },
       { key: 'confirmDelete',   label: 'Confirm before delete', type: 'toggle' },
       { section: 'Canvas & Input' },
-      { key: 'leftDragPan',     label: 'Left-drag empty canvas to pan', type: 'toggle' },
+      { key: 'leftDragSelect',  label: 'Left-drag empty canvas to select', type: 'toggle' },
       { key: 'autoHideChrome',  label: 'Auto-hide toolbar (hover top edge to reveal)', type: 'toggle' },
       { key: 'doubleClickCreatesNote', label: 'Double-click canvas creates note', type: 'toggle' },
+      { key:'snapToVisibleContent', label:'Use visible image bounds for snapping and box selection', type:'toggle' },
+      { key:'transparencyGrid', label:'Show transparency grid on hover', type:'toggle' },
+      { key:'edgeSnapEnabled', label:'Snap to card edges (grid snap off)', type:'toggle' },
+      { key:'edgeSnapDistance', label:'Edge snap distance (screen px)', type:'number', min:2, max:24 },
       { key: 'gridSnapEnabled', label: 'Snap to grid (move & resize)', type: 'toggle' },
       { key: 'gridSnapIncrement', label: 'Snap increment', type: 'select', options: [['minor','Minor (24px)'],['major','Major (120px)']] },
       { key: 'alwaysOnTop',     label: 'Always on top (default: on)', type: 'toggle' },
@@ -812,7 +833,7 @@ var KanvazUI_Extended = (function() {
         el.id = 'setting-row-' + slugifyLabel(row.label);
 
         var lbl = document.createElement('span');
-        lbl.style.cssText = 'color:var(--color-text-2);';
+        lbl.style.cssText = 'color:var(--color-text-2);padding-right:8px;line-height:1.5;min-width:0;';
         lbl.textContent = row.label;
         el.appendChild(lbl);
 
@@ -852,7 +873,7 @@ var KanvazUI_Extended = (function() {
 
         } else if (row.type === 'select') {
           var sel = document.createElement('select');
-          sel.style.cssText = 'width:90px;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:4px;color:var(--color-text);padding:3px 6px;font-size:12px;font-family:var(--font-ui);outline:none;';
+          sel.style.cssText = 'width:124px;flex-shrink:0;background:var(--color-surface-2);border:1px solid var(--color-border);border-radius:4px;color:var(--color-text);padding:3px 6px;font-size:12px;font-family:var(--font-ui);outline:none;';
           for (var oi = 0; oi < row.options.length; oi++) {
             var opt = document.createElement('option');
             opt.value = row.options[oi][0];
@@ -1477,9 +1498,10 @@ var KanvazUI_Extended = (function() {
       '<div class="about-logo">',
         '<img src="../assets/icons/icon-128.png" alt="" width="44" height="44">',
       '</div>',
-      '<div class="about-title">Kanvaz</div>',
+      '<div class="about-title">Kanvaz 中文版</div>',
       '<div class="about-subtitle">A visual reference board for VFX, 3D, and game art.</div>',
-      '<div class="about-version">v' + appVersion + '</div>',
+      '<div class="about-version">v' + appVersion + ' · cn.simple.5.1</div>',
+      '<div class="about-subtitle">Unofficial Chinese fork</div>',
       '<div id="about-update-status" class="about-update-status"></div>',
       '<div class="about-divider"></div>',
       '<div class="about-desc">Free and open source, MIT licensed. Fully offline: no login, no telemetry, no background network activity. Your boards never leave this machine.</div>',
@@ -1491,8 +1513,9 @@ var KanvazUI_Extended = (function() {
     var updateBtn = document.createElement('button');
     updateBtn.id = 'about-update-btn';   /* looked up by app.js's global update-event handlers, which may fire after this screen is rebuilt */
     updateBtn.className = 'about-btn about-btn-update';
-    updateBtn.textContent = 'Check for updates';
-    updateBtn.title = 'Checks GitHub for a newer release — a user-clicked network request, never automatic. See SECURITY.md for every network call Kanvaz can make.';
+    updateBtn.textContent = 'Update this fork manually';
+    updateBtn.disabled = true;
+    updateBtn.title = 'Download updates from the unofficial fork release page';
     updateBtn.onclick = function() { checkForUpdates(updateBtn); };
     box.appendChild(updateBtn);
 
@@ -1502,7 +1525,7 @@ var KanvazUI_Extended = (function() {
        as "Check for updates" — never automatic. */
     var githubBtn = document.createElement('button');
     githubBtn.className = 'about-btn about-btn-github';
-    githubBtn.textContent = 'View on GitHub';
+    githubBtn.textContent = 'Upstream project on GitHub';
     githubBtn.title = 'Opens github.com/p4inz-code/kanvaz in your browser';
     githubBtn.onclick = function() {
       if (typeof KanvazUI !== 'undefined' && KanvazUI.confirmExternalLink) KanvazUI.confirmExternalLink('https://github.com/p4inz-code/kanvaz');
@@ -1648,7 +1671,7 @@ var KanvazUI_Extended = (function() {
         items: [
           ['Click',      'Select card'],
           ['Ctrl+A',     'Select all'],
-          ['Ctrl+drag / V', 'Box-select multiple cards (V toggles the mode, Esc exits)'],
+          ['Left-drag empty canvas', 'Box-select; Shift adds to selection; Esc cancels'],
           ['Drag',       'Move card'],
           ['Arrow keys', 'Nudge 1px'],
           ['Shift+Arrow','Nudge 10px'],
@@ -1781,7 +1804,7 @@ var KanvazUI_Extended = (function() {
 
   function showFirstRunIfNeeded() {
     KanvazBridge.firstRunCheck().then(function(result) {
-      if (!result || result.done) return;
+      if (!result || result.done || settings.simpleWorkspace !== false) return;
       doShowFirstRun();
     }).catch(function(e) {
       console.warn('[Kanvaz] firstRunCheck IPC failed:', e);

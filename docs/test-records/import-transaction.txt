@@ -1,0 +1,8 @@
+PASS fresh launch opens simple canvas without home/welcome overlay
+PASS real multi-file import auto-arranges actual sizes, keeps gaps, avoids existing objects; old object unchanged
+PASS batch import and layout undo once, redo restores all cards and packed geometry
+PASS one-click full interface and settings controls
+PASS editing while media loads remains intact when import is undone
+PASS in-flight import does not add images to a different board
+ALL SIMPLE WORKSPACE AND AUTO IMPORT TESTS PASSED
+

@@ -430,6 +430,7 @@ var KanvazApp = (function() {
   }
 
   function handleDroppedFiles(files, worldPos) {
+    var dropBoardId = KanvazBoards.getActiveBoardInfo().id;
     files = normalizeDroppedFiles(files);
     /* Intercept .pur files — route to PureRef importer */
     for (var p = 0; p < files.length; p++) {
@@ -455,6 +456,7 @@ var KanvazApp = (function() {
     }
     if (typeof KanvazBridge !== 'undefined' && KanvazBridge.resolveDroppedPaths && pathsToResolve.length) {
       KanvazBridge.resolveDroppedPaths(pathsToResolve).then(function(resolvedPaths) {
+        if (KanvazBoards.getActiveBoardInfo().id !== dropBoardId) return;
         if (!resolvedPaths.length) {
           KanvazUI.toast('No supported image/video/audio files found in the dropped item(s)', 'error');
           return;
@@ -467,6 +469,7 @@ var KanvazApp = (function() {
         }
         placeDroppedFiles(resolvedFiles, worldPos);
       }).catch(function(e) {
+        if (KanvazBoards.getActiveBoardInfo().id !== dropBoardId) return;
         console.warn('[Kanvaz] resolveDroppedPaths IPC failed, falling back to the raw drop:', e);
         placeDroppedFiles(files, worldPos);
       });
@@ -519,16 +522,40 @@ var KanvazApp = (function() {
        so any real batch drop (10-20 files) visually stacked on top of
        each other. Cards keep drop order (left-to-right, top-to-bottom)
        so "in sequence" is preserved, they just no longer overlap. */
+    var pending = files.length, added = [], creators = [];
+    var boardId = KanvazBoards.getActiveBoardInfo().id;
+    function finishBatch() {
+      pending--;
+      if (pending || KanvazBoards.getActiveBoardInfo().id !== boardId) return;
+      KanvazHistory.batch(function() {
+      for (var create of creators) added.push(create());
+      var current = added.filter(function(c) { return c && KanvazCards.getAll()[c.id] === c; });
+      if (current.length > 1 && KanvazUI_Extended.getSettings().autoArrangeImport !== false) {
+        var gap = Number(localStorage.getItem('reference-gap') || 0);
+        var edits = KanvazReferenceLayout.pack(current, gap);
+        var others = Object.values(KanvazCards.getAll()).filter(function(c) { return current.indexOf(c) === -1 && !c.hidden; });
+        var collides = current.some(function(c) { var pos = edits.find(function(e) { return e.id === c.id; }); return others.some(function(o) { return pos.x < o.x + o.w + gap && pos.x + c.w + gap > o.x && pos.y < o.y + o.h + gap && pos.y + c.h + gap > o.y; }); });
+        if (collides) { var bottom = Math.max.apply(null, others.map(function(c) { return c.y + c.h; })) + gap; var top = Math.min.apply(null, edits.map(function(e) { return e.y; })); for (var e of edits) e.y += bottom - top; }
+        KanvazCards.applyReferenceEdits(edits);
+        KanvazCards.setMultiSelection(current.map(function(c) { return c.id; }));
+        KanvazCanvas.zoomToSelection();
+      }
+      });
+    }
     for (var i = 0; i < files.length; i++) {
       (function(file, idx) {
         var pos = gridArrangePos(worldPos.x, worldPos.y, idx, files.length);
         if (!file.path) {
           KanvazErrors.handle('FILE_NOT_FOUND', file.name);
+          finishBatch();
           return;
         }
         var isModelFile = KanvazMedia.MODEL_EXTS.indexOf(file.path.split('.').pop().toLowerCase()) !== -1;
         var isExternalConvertFile = KanvazMedia.EXTERNAL_CONVERT_EXTS.indexOf(file.path.split('.').pop().toLowerCase()) !== -1;
         KanvazMedia.loadFromFile(file, function(result, err) {
+          var waiting = false;
+          try {
+          if (KanvazBoards.getActiveBoardInfo().id !== boardId) return;
           if (err) {
             if (err === 'FILE_TOO_LARGE') {
               KanvazUI.toast((isModelFile || isExternalConvertFile)
@@ -536,7 +563,7 @@ var KanvazApp = (function() {
                 : 'File too large for Kanvaz (max 500MB). Use a smaller preview or proxy file.', 'error');
             } else if (err === 'FILE_TYPE_INVALID' && KanvazCards.isTextPreviewPath && (KanvazCards.isTextPreviewPath(file.path) || KanvazCards.isPdfPath(file.path) || KanvazCards.isAdobePath(file.path))) {
               /* Text-like files, PDFs and Adobe files (PSD, AI, XD...) become a file-reference card whose body renders the content. */
-              KanvazCards.createFileRefCardAtPath(pos.x, pos.y, file.path);
+              creators.push(function() { return KanvazCards.createFileRefCardAtPath(pos.x, pos.y, file.path); });
             } else if (err === 'FILE_TYPE_INVALID') {
               KanvazUI.toast('"' + file.name + '" is not supported. Supported: JPG, PNG, GIF, BMP, WEBP, MP4, WEBM, MOV, MP3, WAV, OGG, M4A, GLB, GLTF, OBJ, FBX, STL, PLY, VOX, USD, USDZ, BLEND, PDF, PSD, AI, XD, INDD and text files', 'error');
             } else if (err === 'EXTERNAL_TOOL_NOT_FOUND') {
@@ -547,7 +574,7 @@ var KanvazApp = (function() {
                  plainly why, since "could not load" alone would look
                  like Kanvaz is broken rather than a missing optional
                  tool. */
-              KanvazCards.createFileRefCardAtPath(pos.x, pos.y, file.path);
+              creators.push(function() { return KanvazCards.createFileRefCardAtPath(pos.x, pos.y, file.path); });
               /* Direct feedback: "it says download blender like what?"
                  — the old message named a requirement with no context
                  for what it even is or whether it's optional. Blender
@@ -557,7 +584,7 @@ var KanvazApp = (function() {
                  unlocking the LIVE 3D preview on top of that. */
               KanvazUI.toast('"' + file.name + '" added as a file reference. Kanvaz could not find Blender on this PC — if it is installed somewhere unusual, set the BLENDER_PATH environment variable to blender.exe and drop the file again. (Blender is optional, only needed for the live 3D preview.)', 'warning');
             } else if (err === 'MODEL_TOO_LARGE') {
-              KanvazCards.createFileRefCardAtPath(pos.x, pos.y, file.path);
+              creators.push(function() { return KanvazCards.createFileRefCardAtPath(pos.x, pos.y, file.path); });
               KanvazUI.toast('"' + file.name + '" converts to a model over the 250MB limit. Added it as a file reference instead — try decimating it in Blender first.', 'warning');
             } else if (err === 'EXTERNAL_TOOL_FAILED') {
               /* Direct feedback: "the .blend dropped but error came...
@@ -572,7 +599,7 @@ var KanvazApp = (function() {
                  isn't happening, but the file itself is still real and
                  worth keeping a reference to. Same fallback, same
                  "something is better than nothing" reasoning. */
-              KanvazCards.createFileRefCardAtPath(pos.x, pos.y, file.path);
+              creators.push(function() { return KanvazCards.createFileRefCardAtPath(pos.x, pos.y, file.path); });
               KanvazUI.toast('Blender could not convert "' + file.name + '" — the file may be corrupt or use features this conversion can\'t handle. Added it as a file reference instead.', 'error');
             } else {
               KanvazUI.toast('Could not load "' + file.name + '"', 'error');
@@ -582,24 +609,26 @@ var KanvazApp = (function() {
 
           /* 200MB-500MB: confirm before adding */
           if (result.large) {
+            waiting = true;
             var roundedMB = Math.round(result.sizeMB);
             KanvazUI.showDialog(
               'Large file',
               'Large file (' + roundedMB + 'MB) — may affect canvas performance. Add anyway?',
               [
-                { label: 'Add',    cls: 'primary', action: function() { KanvazCards.createFromMedia(result, pos); } },
-                { label: 'Cancel', cls: '',         action: function() {} }
+                { label: 'Add',    cls: 'primary', action: function() { if (KanvazBoards.getActiveBoardInfo().id === boardId) creators.push(function() { return KanvazCards.createFromMedia(result, pos); }); finishBatch(); } },
+                { label: 'Cancel', cls: '',         action: function() { finishBatch(); } }
               ]
             );
             return;
           }
 
-          KanvazCards.createFromMedia(result, pos);
+          creators.push(function() { return KanvazCards.createFromMedia(result, pos); });
 
           /* Warn on formats Chromium may not support */
           if (result.ext === 'mkv' || result.ext === 'avi') {
             KanvazUI.toast(file.name + ' may not play — MKV/AVI support is limited. MP4 or WebM recommended.', 'error');
           }
+          } finally { if (!waiting) finishBatch(); }
         });
       })(files[i], i);
     }

@@ -1,0 +1,5 @@
+PASS packaged About identifies unofficial fork, release marker, original author and disabled update button
+PASS updater module not loaded and no upstream automatic publishing target
+PASS upstream MIT license unchanged
+ALL PUBLIC PACKAGING TESTS PASSED
+

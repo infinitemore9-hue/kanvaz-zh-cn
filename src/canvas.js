@@ -45,6 +45,7 @@ var KanvazCanvas = (function() {
   var marqueeStartX = 0;
   var marqueeStartY = 0;
   var marqueeEl = null;
+  var marqueeBase = [];
 
   /* ── Init ── */
 
@@ -698,18 +699,17 @@ var KanvazCanvas = (function() {
 
       var isEmptyTarget = (e.target === container || e.target === world || e.target === gridCanvas);
 
-      if (e.button === 0 && isEmptyTarget && (e.ctrlKey || e.metaKey || marqueeModeOn)) {
+      var settings = typeof KanvazUI_Extended !== 'undefined' ? KanvazUI_Extended.getSettings() : {};
+      var selectByDefault = !settings || settings.leftDragSelect !== false;
+      var selectionLocked = typeof KanvazApp !== 'undefined' && ((KanvazApp.isMoodLockActive && KanvazApp.isMoodLockActive()) || (KanvazApp.isPresentationModeActive && KanvazApp.isPresentationModeActive()));
+      if (e.button === 0 && isEmptyTarget && !spaceDown && !e.altKey && !selectionLocked && (e.ctrlKey || e.metaKey || marqueeModeOn || selectByDefault)) {
         e.preventDefault();
         blurActiveEditIfAny();
+        marqueeBase = e.shiftKey ? KanvazCards.getSelectedIds() : [];
         startMarquee(e.clientX, e.clientY);
         return;
       }
-
-      var leftDragEnabled = true;
-      if (typeof KanvazUI_Extended !== 'undefined') {
-        var s = KanvazUI_Extended.getSettings();
-        leftDragEnabled = !s || s.leftDragPan !== false;
-      }
+      var leftDragEnabled = !selectByDefault || selectionLocked;
 
       /* Direct feedback: "add pan control like alt + drag left mb, take
          reference from maya" — Alt+left-drag pans from anywhere,
@@ -759,9 +759,21 @@ var KanvazCanvas = (function() {
       }
     });
 
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && isMarqueeSelecting) {
+        isMarqueeSelecting = false;
+        if (marqueeEl) marqueeEl.style.display = 'none';
+        e.preventDefault(); e.stopImmediatePropagation();
+      }
+    }, true);
+    window.addEventListener('blur', function() {
+      spaceDown = false; isPanning = false; isMarqueeSelecting = false;
+      container.classList.remove('grab', 'grabbing');
+      if (marqueeEl) marqueeEl.style.display = 'none';
+    });
     /* Space key for pan mode */
     window.addEventListener('keydown', function(e) {
-      if (e.code === 'Space' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'INPUT') {
+      if (e.code === 'Space' && !e.target.closest('input,textarea,select,[contenteditable="true"]')) {
         if (!spaceDown) {
           spaceDown = true;
           container.classList.add('grab');
@@ -914,7 +926,7 @@ var KanvazCanvas = (function() {
        empty canvas = deselect" convention below rather than selecting
        nothing via an accidental zero-size box. */
     if (Math.abs(clientX - marqueeStartX) < 3 && Math.abs(clientY - marqueeStartY) < 3) {
-      if (typeof KanvazCards !== 'undefined') KanvazCards.deselectAll();
+      if (typeof KanvazCards !== 'undefined' && !marqueeBase.length) KanvazCards.deselectAll();
       return;
     }
 
@@ -930,10 +942,16 @@ var KanvazCanvas = (function() {
     var hitIds = [];
     for (var id in all) {
       var c = all[id];
-      var cardIntersects = c.x < boxX2 && (c.x + c.w) > boxX1 && c.y < boxY2 && (c.y + c.h) > boxY1;
-      if (cardIntersects) hitIds.push(id);
+      var bounds = c;
+      var settings = KanvazUI_Extended.getSettings();
+      if (settings.snapToVisibleContent !== false && c._alphaBounds) {
+        if (c._alphaBounds.empty) continue;
+        bounds = KanvazAlphaGeometry.project(c,c.x,c.y,c.w,c.h);
+      }
+      var cardIntersects = bounds.x < boxX2 && (bounds.x + bounds.w) > boxX1 && bounds.y < boxY2 && (bounds.y + bounds.h) > boxY1;
+      if (cardIntersects && !c.hidden) hitIds.push(id);
     }
-    KanvazCards.setMultiSelection(hitIds);
+    KanvazCards.setMultiSelection(Array.from(new Set(marqueeBase.concat(hitIds))));
   }
 
   /* ── Coordinate conversion ── */
@@ -1045,6 +1063,7 @@ var KanvazCanvas = (function() {
     getTy:          function() { return ty; },
     drawGrid:       drawGrid,
     setMarqueeMode: setMarqueeMode,
+    isSpacePanActive: function() { return spaceDown; },
     isMarqueeModeOn: function() { return marqueeModeOn; }
   };
 

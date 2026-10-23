@@ -1,0 +1,6 @@
+{
+  "files": 341,
+  "highConfidencePatterns": [],
+  "privateFileExtensions": [],
+  "note": "Static review, not a proof that every credential or private byte is absent. Synthetic test paths and inherited upstream URLs are not credentials."
+}

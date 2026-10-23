@@ -481,6 +481,7 @@ var KanvazSidePanel = (function() {
           textCol.className = 'profiles-dialog-text-col';
           var nameEl = document.createElement('div');
           nameEl.className = 'profiles-dialog-name';
+    nameEl.setAttribute('data-user-content', 'true');
           nameEl.textContent = p.name + (isActive ? ' (current)' : '');
           if (p.guest) {
             var badge = document.createElement('span');

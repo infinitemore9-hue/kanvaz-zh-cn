@@ -302,6 +302,7 @@ var KanvazTaskTracker = (function() {
     var textEl = document.createElement('div');
     textEl.style.cssText = 'flex:1;font-size:12px;line-height:1.4;color:var(--color-text);transition:color 0.15s;' + (task.done ? 'text-decoration:line-through;color:var(--color-text-3);' : '') + 'word-break:break-word;cursor:text;';
     textEl.textContent = task.text;
+    textEl.setAttribute('data-user-content', 'true');
     textEl.title = 'Click to edit';
     textEl.onclick = function() {
       var ta = document.createElement('input');
@@ -441,6 +442,7 @@ var KanvazTaskTracker = (function() {
     var t = document.createElement('div');
     t.style.cssText = 'flex:1;font-size:11px;transition:color 0.15s;color:' + (sub.done ? 'var(--color-text-3);text-decoration:line-through;' : 'var(--color-text-2);');
     t.textContent = sub.text;
+    t.setAttribute('data-user-content', 'true');
     r.appendChild(t);
     var del = document.createElement('button');
     del.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';

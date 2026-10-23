@@ -16,7 +16,7 @@ var vr = require(path.join(__dirname, '..', 'tools', 'verify-release.js'));
 
 var VERSION = '9.9.9';
 var PLUGINS = ['ai-export', 'mcp-bridge', 'template-maker', 'theme-creator'];
-var GUIDE = fs.readFileSync(path.join(__dirname, '..', '.github', 'release-download-guide.md'), 'utf8');
+var GUIDE = fs.readFileSync(path.join(__dirname, 'fixtures', 'upstream-release-download-guide.md'), 'utf8');
 var made = [];
 
 function sha(buf) { return crypto.createHash('sha256').update(buf).digest('hex'); }

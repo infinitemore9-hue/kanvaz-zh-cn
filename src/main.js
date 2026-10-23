@@ -5,9 +5,53 @@ var app = electron.app;
 var BrowserWindow = electron.BrowserWindow;
 var ipcMain = electron.ipcMain;
 var dialog = electron.dialog;
+var uiLanguage = 'zh-CN';
+var translateUiText = require('./localization');
+ipcMain.on('ui-language', function(event, lang) { uiLanguage = lang === 'en' ? 'en' : 'zh-CN'; });
+function installLocalizedDialog(method) {
+  var original = dialog[method].bind(dialog);
+  dialog[method] = function() {
+    var args = Array.prototype.slice.call(arguments);
+    if (uiLanguage === 'zh-CN') {
+      args = args.map(function(arg) {
+        if (!arg || typeof arg !== 'object' || arg instanceof BrowserWindow) return arg;
+        var opts = Object.assign({}, arg);
+        var fields = ['title','message','detail','buttonLabel','checkboxLabel'];
+        for (var fi = 0; fi < fields.length; fi++) {
+          var k = fields[fi];
+          if (typeof opts[k] === 'string') opts[k] = translateUiText(opts[k]) || opts[k];
+        }
+        if (opts.buttons) opts.buttons = opts.buttons.map(function(x) { return translateUiText(x) || x; });
+        if (opts.filters) opts.filters = opts.filters.map(function(f) { return Object.assign({}, f, {name:translateUiText(f.name) || f.name}); });
+        return opts;
+      });
+    }
+    return original.apply(null, args);
+  };
+}
+var nativeDialogMethods = ['showOpenDialog', 'showSaveDialog', 'showMessageBox'];
+for (var nd = 0; nd < nativeDialogMethods.length; nd++) installLocalizedDialog(nativeDialogMethods[nd]);
 var shell = electron.shell;
 var path = require('path');
 var fs = require('fs');
+var liveFiles = new (require('./live-files'))();
+ipcMain.handle('live-images-folder', async function() {
+  var result = await dialog.showOpenDialog(mainWindow, {title:'Locate source image folder', properties:['openDirectory']});
+  return result && !result.canceled ? result.filePaths[0] : null;
+});
+ipcMain.handle('live-images-status', async function(event, paths) {
+  if (!Array.isArray(paths)) return [];
+  var result = [];
+  for (var p of paths.slice(0, 1000)) {
+    if (!pathGuard.isLocalAbsolutePath(p)) continue;
+    try { var stat = await fs.promises.stat(p); result.push({path:p, exists:stat.isFile(), size:stat.size}); }
+    catch (_) { result.push({path:p, exists:false}); }
+  }
+  return result;
+});
+ipcMain.handle('live-images-scan', function(event, paths) {
+  return liveFiles.scan(Array.isArray(paths) ? paths.filter(function(p) { return pathGuard.isLocalAbsolutePath(p); }) : []);
+});
 var net = require('net');
 var https = require('https');
 var http = require('http');
@@ -94,7 +138,8 @@ function rejectNonLocal(filePath) {
    normally with updates simply unavailable, not crash on require(). */
 var autoUpdater = null;
 try {
-  autoUpdater = require('electron-updater').autoUpdater;
+  /* The unofficial directory build has no self-update feed. */
+  autoUpdater = null;
 } catch (e) {
   autoUpdater = null;
 }
@@ -1967,7 +2012,7 @@ function registerIPC() {
      per-entry (an unreadable path is skipped, never fails the whole drop). */
   ipcMain.handle('resolve-dropped-paths', function(event, paths) {
     if (!Array.isArray(paths)) return Promise.resolve([]);
-    paths = paths.filter(pathGuard.isLocalAbsolutePath).slice(0, 5000);
+    paths = paths.filter(function(p) { return pathGuard.isLocalAbsolutePath(p); }).slice(0, 5000);
     return Promise.all(paths.map(function(p) {
       return fs.promises.stat(p).then(function(stat) {
         if (stat.isDirectory()) {

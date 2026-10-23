@@ -9,6 +9,7 @@ var KanvazHistory = (function() {
   var pointer = -1;
   var MAX     = 50;
   var locked  = false;
+  var batchDepth = 0, batchChanged = false;
 
   /* Plugin cards' pluginData is arbitrary, opaque data a third-party
      plugin controls — unlike every other field snapshotted below, it
@@ -103,6 +104,7 @@ var KanvazHistory = (function() {
 
   function push() {
     if (locked) return;
+    if (batchDepth) { batchChanged = true; return; }
     stack = stack.slice(0, pointer + 1);
     stack.push(snapshot());
     if (stack.length > MAX) stack = stack.slice(stack.length - MAX);
@@ -238,6 +240,11 @@ var KanvazHistory = (function() {
 
   function init() { clear(); }
 
-  return { init: init, push: push, undo: undo, redo: redo, clear: clear };
+  function batch(fn) {
+    batchDepth++;
+    try { return fn(); }
+    finally { batchDepth--; if (!batchDepth && batchChanged) { batchChanged = false; push(); } }
+  }
+  return { batch: batch, init: init, push: push, undo: undo, redo: redo, clear: clear };
 
 })();

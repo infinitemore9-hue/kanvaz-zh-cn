@@ -1,0 +1,149 @@
+
+━━━ 1. Syntax (node --check) ━━━
+  ✓ all 62 files parse
+
+━━━ 2. Static lint ━━━
+  ✓ 0 errors (warnings acceptable)
+
+━━━ 3. Port alignment (real Chromium) ━━━
+  SKIP — no Chrome/Chromium binary found.
+    Fix: set PUPPETEER_EXECUTABLE_PATH to your Chrome install, e.g.
+    Windows: set PUPPETEER_EXECUTABLE_PATH=C:\Program Files\Google\Chrome\Application\chrome.exe
+
+━━━ 4. Board container format round trip ━━━
+  ✓ pack/unpack lossless, old files still detected, corruption handled safely
+
+━━━ 5. Plugin loader ━━━
+  ✓ manifest validation, permission escalation, and path-traversal guard all correct
+
+━━━ 5b. SSRF guard (URL preview fetch) ━━━
+  ✓ private/loopback/link-local/reserved addresses blocked, public allowed, real loopback request refused
+
+━━━ 5d. Path guard (file IPC trust boundary) ━━━
+  ✓ remote/UNC refused, board paths need .kanvaz + a main-issued grant, widened launcher blocklist
+
+━━━ 5d2. Save guard (shared-drive overwrite) ━━━
+  ✓ foreign saves detected, own saves and 2 s mtime rounding are not, force and deleted-target paths behave
+
+━━━ 5d3. Release-asset verifier ━━━
+  ✓ catches missing installers, bad checksum names, hash mismatch, wrong guide filenames, duplicate drafts; accepts a correct release
+  ✓ unofficial fork uses manual publication and has no upstream publishing target
+
+━━━ 5d4. Doc and installer assets ━━━
+  ✓ no broken asset references in README/landing/guide; installer sidebar and icon files valid
+
+━━━ 5d5. Keep on top ━━━
+  ✓ re-raises above other topmost apps without taking focus; stops when off; macOS full-screen level
+
+━━━ 5d6. Window bounds ━━━
+  ✓ a remembered window position is only restored if it is still reachable on a connected display
+
+━━━ 5e. MCP token auth ━━━
+  ✓ 256-bit per-start token, constant-time verify, atomic token file, removed on stop
+
+━━━ 5f. Board container limits (zip-bomb defense) ━━━
+  ✓ oversized board.json/asset/total/entry-count rejected before inflating; normal board unchanged
+
+━━━ 5g. Crash log (local only) ━━━
+  ✓ JSON lines, home dir masked, fields clipped, rotates at 1 MB, never throws
+
+━━━ 5c. Blender detection ━━━
+  ✓ newest-version pick, plain/other-drive folders, PATH, override, registry parser, null when absent
+
+━━━ 5h. Kanvaz Link listener ━━━
+  ✓ token on every request, four-method whitelist, consent gating, hostile input refused, real pipe/socket
+
+━━━ 5i. Kanvaz Link controller ━━━
+  ✓ native-consent flow, private drop dir, delivery to the renderer, hostile files refused, off switch
+
+━━━ 5j. Adobe previews ━━━
+  ✓ PSD/PSB (raw+RLE, 8/16-bit, RGB/gray/indexed/CMYK, alpha), XD, XMP thumbnails, AI, Fresco; broken files refused
+
+━━━ 5k. Open with Kanvaz (OS integration) ━━━
+  ✓ argv filter safe; package.json fileAssociations + Linux MIME types match the supported types exactly
+
+━━━ 5f. Blender export script ━━━
+  ✓ real Blender: hidden object and other scenes left out, alpha kept
+
+━━━ 5g. 3D render modes ━━━
+  ✓ Shaded/Normals/Matcap/Wireframe/Albedo/Alpha keep colour, opacity and sidedness; original materials untouched
+
+━━━ 5l. Platform labels (Mac/Linux shortcut wording) ━━━
+(node:50140) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///<PROJECT>/src/vendor/three/three.module.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\<PROJECT>\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓ Apple modifier glyphs on mac, Ctrl elsewhere; mac window flags correct
+
+━━━ 5m. Auto-update support (Check for updates flow) ━━━
+  ✓ installed Windows + Linux get the real check; portable/mac fall back to the release page; error text is plain-language
+
+━━━ 5n. Preview quality (Low/Medium/High) ━━━
+  ✓ resolve() prefers a card override over the global setting; pixel-ratio/DPI/maxSide climb low->high consistently
+
+━━━ 5o. HDR/EXR previews ━━━
+  ✓ real spec-built HDR (RLE) and EXR (NONE + RLE) files round-trip correctly; unsupported EXR compression and malformed files are refused with a clear reason; tone-mapping and downscale stay in range
+
+━━━ 5p. Krita previews ━━━
+  ✓ finds the real whole-canvas preview in a spec-built .kra zip, not a per-layer thumbnail or a smaller decoy; honest failure for a file with none
+
+━━━ 6. Command registry ━━━
+[Kanvaz] registerCommand requires a string id
+[Kanvaz] registerCommand("test.nolabel") requires { label, run(context) }
+[Kanvaz] registerCommand("test.norun") requires { label, run(context) }
+[Kanvaz] command "test.throws" threw: boom
+[Kanvaz] command "test.ping" was already registered — overwriting
+  ✓ registerCommand validation, palette filtering, and fuzzy match all correct
+
+━━━ 7. MCP Bridge end-to-end ━━━
+  SKIP — official-plugins/mcp-bridge/node_modules missing.
+    Fix: cd official-plugins/mcp-bridge && npm install
+
+━━━ 8. Plugin permission scoping ━━━
+  SKIP — no Chrome/Chromium binary found.
+
+━━━ 8b. Undo history snapshot integrity ━━━
+  ✓ restore() never lets a live edit alias back into a stored snapshot
+
+━━━ 9. PureRef .pur import ━━━
+  ✓ parses correctly, scales O(n) not O(n²), worker boundary round-trips
+
+━━━ 9b. Smart Search ━━━
+  ✓ lemmatized matching, ranking, and re-index all correct against the real worker
+
+━━━ 9c. Shared cards across boards ━━━
+  ✓ content registry round-trips across boards, positions stay independent, pruning works
+
+━━━ 9d. Task Tracker ━━━
+  ✓ add/remove task+subtask, done gating only-when-subtasks-exist, 5-subtask cap on both addSubtask and load, progress aggregation, card link, malformed-file tolerance
+
+━━━ 9f. Save guard wiring ━━━
+  ✓ main.js file-write goes through saveGuard.guardedWrite
+  ✓ main.js file-read still returns mtimeMs
+  ✓ preload forwards the opts argument to file-write
+  ✓ boards.js sends expectedMtimeMs and handles result.conflict
+
+━━━ 9g. MoodLock and keep-on-top wiring ━━━
+  ✓ main.js sets always-on-top through keep-on-top and re-raises on blur
+  ✓ app.js exports toggleMoodLock / isMoodLockActive
+  ✓ cards.js keeps both read-only choke points aware of MoodLock (4 references)
+  ✓ shortcuts.js has Ctrl+Shift+L and the MoodLock key allowlist
+  ✓ titlebar has the MoodLock button right before Minimize, wired to toggleMoodLock
+  ✓ MoodLock saves/restores the window position through main.js (enter and exit)
+  ✓ Left/Right step through references while MoodLock is on
+  ✓ main.css hides titlebar/toolbar, side panel and status bar under .mood-lock-active
+
+━━━ 9e. switchBoard async contract ━━━
+  ✓ switchBoard() still returns a real Promise on every path
+  ✓ switchBoardById() still chains onto switchBoard()'s Promise instead of returning a bare object
+
+━━━ 10. Version consistency ━━━
+  ✓ boards.js VERSION = 9.8.2
+  ✓ ui.js About = 9.8.2
+  ✓ README build cmd = 9.8.2
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ALL CHECKS PASSED — ship it.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+

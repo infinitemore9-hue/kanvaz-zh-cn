@@ -3971,3 +3971,13 @@ body.presentation-mode-active .card [contenteditable] {
 body.mood-lock-active #mood-lock-pos:not(:empty) {
   display: block;
 }
+#reference-tools-launch{position:fixed;right:20px;bottom:72px;z-index:100000;background:var(--color-surface-2);color:var(--color-text);border:1px solid var(--color-accent);border-radius:6px;padding:7px 12px;font:12px var(--font-ui);cursor:pointer}
+#reference-tools-overlay{position:fixed;inset:0;z-index:100010;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+.reference-tools-box{width:min(760px,94vw);max-height:86vh;overflow:auto;padding:20px;background:var(--color-surface);color:var(--color-text);border:1px solid var(--color-border-2);border-radius:12px;font:13px var(--font-ui)}
+.reference-tools-heading{display:flex;justify-content:space-between;align-items:center}.reference-tools-box h2{font-size:19px;margin:0}.reference-tools-box h3{font-size:14px;margin:18px 0 8px}.reference-tools-box p{line-height:1.6;color:var(--color-text-2);margin:10px 0}
+.reference-tools-box button{background:var(--color-surface-2);color:var(--color-text);border:1px solid var(--color-border-2);border-radius:5px;padding:7px 10px;cursor:pointer;font:12px var(--font-ui)}
+.reference-tools-box button:hover{border-color:var(--color-accent)}.reference-controls{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.reference-tools-box input[type=number]{width:65px}.reference-tools-box select,.reference-tools-box input[type=number]{margin-left:8px;background:var(--color-surface-2);color:var(--color-text);border:1px solid var(--color-border-2);padding:5px;border-radius:4px}.reference-shortcut-toggle{display:flex;gap:8px;margin-top:14px;align-items:center}.reference-source{padding:12px 0;border-top:1px solid var(--color-border)}.reference-path{overflow-wrap:anywhere;color:var(--color-text-3);font-size:11px;margin:5px 0}.reference-source button{margin:6px 6px 0 0}.reference-source span{color:var(--color-accent);font-size:12px}
+body.reference-view #top-chrome,body.reference-view #side-panel,body.reference-view #statusbar,body.reference-view #canvas-grid,body.reference-view .card-bar{display:none!important}
+body.reference-view .card{box-shadow:none!important;border-color:transparent}
+#reference-view-exit{display:none;position:fixed;right:20px;bottom:112px;z-index:100000;padding:7px 12px;background:var(--color-surface-2);color:var(--color-text);border:1px solid var(--color-border-2);border-radius:6px;cursor:pointer;font:12px var(--font-ui)}
+body.reference-view #reference-view-exit{display:block}body.reference-view #minimap-wrap{display:none!important}

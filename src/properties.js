@@ -268,6 +268,7 @@ var KanvazProperties = (function() {
     var subtitle = document.createElement('div');
     subtitle.style.cssText = 'font-size:11px;color:var(--color-text-3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
     subtitle.textContent = card.name || 'Untitled';
+    subtitle.setAttribute('data-user-content', 'true');
     titleWrap.appendChild(subtitle);
     header.appendChild(titleWrap);
     container.appendChild(header);

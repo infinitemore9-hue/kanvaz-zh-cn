@@ -1,0 +1,43 @@
+PASS Escape restores single image and detaches drag listeners
+PASS Escape restores all movable members of multiselection
+PASS transparent margin alone is excluded from visible-content box selection
+PASS optional full-image box selection
+PASS simulated blur cancels and restores active drag
+[
+  {
+    "check": "Escape cancels active card drag",
+    "expected": {
+      "x": 100,
+      "y": 100
+    },
+    "actual": {
+      "x": 100,
+      "y": 100
+    },
+    "problem": false
+  },
+  {
+    "check": "Box-select across transparent margin only",
+    "expected": "No visible content intersects box",
+    "actual": "Not selected",
+    "problem": false
+  },
+  {
+    "check": "Reference tools use blocking overlay",
+    "actual": {
+      "width": 1280,
+      "height": 900
+    },
+    "problem": true
+  },
+  {
+    "check": "Window blur stops active card drag",
+    "actual": [
+      100,
+      100
+    ],
+    "problem": false
+  }
+]
+AUDIT COMPLETED
+
