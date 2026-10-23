@@ -18,7 +18,7 @@
 
 validate 中缺少独立 Chrome/Chromium 和 MCP bridge 插件依赖的项目显示 SKIP，不视为通过。上面的 Electron 交互测试单独执行。
 
-未执行真实 Photoshop/Illustrator 保存流程、实际系统 Alt+Tab、多显示器、全格式、超大规模透明图片以及 macOS/Linux/ARM 测试。GitHub 线上 Actions 和线上发布尚未执行。
+未执行真实 Photoshop/Illustrator 保存流程、实际系统 Alt+Tab、多显示器、全格式、超大规模透明图片以及 macOS/Linux/ARM 测试。GitHub Actions 尚未执行。本报告写作时的构建验证先于线上发布；后续发布结果见 [发布回执](PUBLICATION.md)。
 
 simple.5 中完成的透明吸附、翻转、裁切、多选间距、PNG 原字节和原图像素检查已有此前回归记录；本次公开整理没有改变这些实现，但不将此前测试冒充本构建全部重新执行。
 

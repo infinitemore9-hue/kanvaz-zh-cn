@@ -2,6 +2,8 @@
 
 基于 [Kanvaz](https://github.com/p4inz-code/kanvaz) 的**非官方衍生版本**，提供简体中文界面和参考图片工作流改进。原始项目由 **Atharva Patil | P4inz | P4inz Interactive Labs** 开发，本仓库保留原版权和 MIT 许可；不代表原作者的官方发布。
 
+[已验证的发布回执](docs/PUBLICATION.md)。
+
 当前公开整理版本：**9.8.2-cn.simple.5.1**。基于上游 v9.8.2，程序内部基础版本仍为 9.8.2。已构建、运行验证的是 **Windows x64 目录式便携版**；本次未构建或验证 macOS、Linux 与 ARM 版本。
 
 ## 下载与启动
