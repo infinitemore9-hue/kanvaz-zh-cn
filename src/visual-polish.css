@@ -57,3 +57,6 @@ body.show-transparency-grid .alpha-image:hover,body.show-transparency-grid .alph
 #text-quick-toolbar .text-quick-geometry .number-slider-field{width:100%}
 @media(max-width:650px){.text-quick-geometry{grid-template-columns:repeat(2,minmax(85px,1fr))}}
 #text-quick-toolbar{width:max-content;max-width:min(640px,calc(100vw - 16px))}
+.card.snap-target{outline:2px solid #5fd4c4!important;outline-offset:3px}
+.card.alpha-image.snap-target{outline:1px solid rgba(95,212,196,.35)!important;outline-offset:0}
+.card.alpha-image.snap-target>.alpha-content-outline{display:block;border:2px solid #5fd4c4}

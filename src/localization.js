@@ -1,6 +1,26 @@
 /* Presentation-only localization: never rewrite stored board data or input values. */
 (function() {
-  var pairs = `Position and size|位置与尺寸
+  var pairs = `Color readout position|取色框位置
+Fixed corner|固定右下角
+Follow cursor|跟随鼠标
+Floating panel|独立浮动框
+Color readout detail|取色框内容
+Compact color chip|精简：色块与 HEX
+Detailed color data|完整颜色数据
+Color readout trigger|取色显示方式
+Hover over image|悬停图片时显示
+Hold Ctrl to inspect|按住 Ctrl 时显示
+Color panel opacity (%)|取色框不透明度（%）
+Color hover delay (ms)|取色出现延迟（毫秒）
+Text toolbar position|文字工具条位置
+Near selected text|贴近文字选框
+Fixed top toolbar|固定在窗口顶部
+Hidden toolbar|隐藏工具条
+Color display settings|取色显示设置
+Drag color panel|拖动取色框
+Toggle color details (F7)|展开或收起颜色数据（F7）
+Hide color readout (F6)|隐藏取色框（F6）
+Position and size|位置与尺寸
 Font family|字体
 Default font|默认字体
 Microsoft YaHei|微软雅黑

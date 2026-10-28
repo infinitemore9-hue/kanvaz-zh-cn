@@ -2,7 +2,7 @@
 var KanvazTextTools=(function(){
   var bar=document.createElement('div');bar.id='text-quick-toolbar';bar.hidden=true;bar.setAttribute('role','toolbar');bar.setAttribute('aria-label','Text formatting');
   document.body.appendChild(bar);
-  var active=null;
+  var active=null, moving=false, lastTextId=null;
   function make(tag,id,title){var el=document.createElement(tag);if(id)el.id=id;if(title){el.title=title;el.setAttribute('aria-label',title);}bar.appendChild(el);return el;}
   function button(id,title,value,fn){var el=make('button',id,title);el.type='button';el.textContent=value;el.addEventListener('mousedown',function(e){e.preventDefault();});el.onclick=fn;return el;}
   function apply(patch){if(active)KanvazCards.setTextStyle(active.id,patch);sync();}
@@ -47,10 +47,12 @@ var KanvazTextTools=(function(){
   function sync(){
     if(typeof KanvazCards==='undefined')return;
     var ids=KanvazCards.getSelectedIds(),c=ids.length===1?KanvazCards.getAll()[ids[0]]:null;
+    var placement=KanvazUI_Extended.getSettings().textToolsPlacement||'selection';
     var locked=(KanvazApp.isPresentationModeActive&&KanvazApp.isPresentationModeActive())||(KanvazApp.isMoodLockActive&&KanvazApp.isMoodLockActive());
     var el=c&&document.getElementById(c.id);
-    if(!c||c.type!=='text'||c.hidden||!el||locked||document.body.classList.contains('reference-view')||document.querySelector('.modal-overlay,#reference-tools-overlay')){active=null;bar.hidden=true;return;}
+    if(moving||placement==='off'||!c||c.type!=='text'||c.hidden||!el||locked||document.body.classList.contains('reference-view')||document.querySelector('.modal-overlay,#reference-tools-overlay')){active=null;bar.hidden=true;return;}
     var rect=el.getBoundingClientRect();if(rect.bottom<40||rect.top>innerHeight||rect.right<0||rect.left>innerWidth){bar.hidden=true;return;}
+    if(lastTextId!==c.id){layout.open=false;lastTextId=c.id;}
     active=c;bar.hidden=false;
     for(var field in fields)if(document.activeElement!==fields[field])fields[field].value=Math.round(c[field]);
     if(document.activeElement!==font)font.value=c.fontFamily||'default';
@@ -62,7 +64,11 @@ var KanvazTextTools=(function(){
     var h=bar.offsetHeight,w=bar.offsetWidth;
     bar.style.left=Math.max(8,Math.min(rect.left,innerWidth-w-8))+'px';
     bar.style.top=Math.max(42,Math.min(rect.top-h-8>=42?rect.top-h-8:rect.bottom+8,innerHeight-h-8))+'px';
+    if(placement==='top'){bar.style.left=Math.max(8,(innerWidth-w)/2)+'px';bar.style.top='46px';}
   }
+  window.addEventListener('pointerdown',function(e){var card=e.target.closest && e.target.closest('.card');if(card && !(e.target.tagName==='TEXTAREA'&&!e.target.readOnly)){moving=true;bar.hidden=true;}},true);
+  window.addEventListener('pointerup',function(){moving=false;sync();},true);
+  window.addEventListener('blur',function(){moving=false;sync();});
   layout.addEventListener('toggle',sync);
   if(typeof ResizeObserver!=='undefined')new ResizeObserver(sync).observe(bar);
   setInterval(sync,150);window.addEventListener('resize',sync);window.addEventListener('mouseup',sync);
