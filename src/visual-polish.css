@@ -60,3 +60,16 @@ body.show-transparency-grid .alpha-image:hover,body.show-transparency-grid .alph
 .card.snap-target{outline:2px solid #5fd4c4!important;outline-offset:3px}
 .card.alpha-image.snap-target{outline:1px solid rgba(95,212,196,.35)!important;outline-offset:0}
 .card.alpha-image.snap-target>.alpha-content-outline{display:block;border:2px solid #5fd4c4}
+#temporary-image-preview{position:fixed;inset:52px 24px 38px;z-index:95000;pointer-events:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--color-surface);border:1px solid var(--color-border-2);border-radius:10px;box-shadow:0 8px 40px rgba(0,0,0,.3);padding:16px;box-sizing:border-box;color:var(--color-text-2);font:12px var(--font-ui)}
+#temporary-image-preview[hidden],#selection-layout-tools[hidden]{display:none}
+#temporary-image-preview img{display:block;width:100%;height:calc(100% - 28px);min-height:0;object-fit:contain}
+#selection-layout-tools{position:fixed;bottom:34px;left:50%;transform:translateX(-50%);z-index:89999;max-width:calc(100vw - 24px);width:max-content;padding:6px 10px;border:1px solid var(--color-border-2);border-radius:8px;background:var(--color-surface);box-shadow:0 4px 18px rgba(0,0,0,.2);color:var(--color-text);font:12px var(--font-ui)}
+#selection-layout-tools summary{cursor:pointer;padding:3px 6px;user-select:none}
+.selection-layout-content{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding-top:8px;width:420px;max-width:calc(100vw - 48px)}
+.selection-layout-content button,.selection-layout-content input{box-sizing:border-box;border:1px solid var(--color-border);border-radius:4px;background:var(--color-surface-2);color:var(--color-text);padding:6px;font:12px var(--font-ui);min-width:0}
+.selection-layout-content button{cursor:pointer}.selection-layout-content button:disabled{opacity:.4;cursor:default}
+.selection-layout-content label{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.selection-layout-content .number-slider-field{width:200px}
+.selection-layout-content small{grid-column:1/-1;color:var(--color-text-3);line-height:1.5}
+#text-quick-sizing{max-width:100%}.text-quick-geometry>label:first-child{grid-column:1/-1}
+body.selection-layout-visible #toast-container{bottom:calc(var(--selection-layout-height,40px) + 44px)}

@@ -28,7 +28,7 @@ var KanvazShortcuts = (function() {
        intentionally skips while inText is true (e.g. so "t" typed into
        a note doesn't toggle Always-on-Top); a focused select belongs in
        that same category. */
-    var inText   = (tag === 'TEXTAREA' || isTextInput || tag === 'SELECT');
+    var inText   = (tag === 'TEXTAREA' || isTextInput || tag === 'SELECT' || (activeEl && activeEl.isContentEditable));
     var ctrl     = e.ctrlKey || e.metaKey;
     var shift    = e.shiftKey;
     /* Audit fix: every ctrl-combo check below used to compare e.key
@@ -450,6 +450,9 @@ var KanvazShortcuts = (function() {
        (see cards.js), so looping it across a multi-selection here still
        results in exactly one undo step per burst of arrow presses. */
     var nudge = shift ? 10 : 1;
+    if(ctrl || e.altKey || e.defaultPrevented || document.getElementById('startup-screen'))return;
+    if(activeEl && activeEl.closest('button,input,select,[role="slider"],summary'))return;
+    if(document.querySelector('.modal-overlay,#reference-tools-overlay,#dialog-overlay.visible,#shortcuts-overlay,#about-screen'))return;
     var nudgeIds = KanvazCards.getSelectedIds();
     if (e.key === 'ArrowLeft') {
       e.preventDefault();

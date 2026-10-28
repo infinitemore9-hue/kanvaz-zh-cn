@@ -708,6 +708,7 @@ var KanvazCards = (function() {
         KanvazAnnotate.resize(card.id, Math.round(card.w), Math.round(card.h));
       }
       rememberedSizes[card.type] = { w: card.w, h: card.h };
+      fitTextSize(card);
       KanvazApp.markDirty();
       KanvazHistory.push();
       emitCardEvent('cardUpdate', card);
@@ -1837,6 +1838,7 @@ var KanvazCards = (function() {
     var el = document.getElementById(id);
     var ta = el && el.querySelector('.text-body');
     if (ta) ta.style.fontSize = card.fontSize + 'px';
+    fitTextSize(card);
     KanvazApp.markDirty();
   }
   function setTextColor(id, hex) {
@@ -2815,6 +2817,33 @@ var KanvazCards = (function() {
     ta.style.textAlign = /^(left|center|right)$/.test(card.textAlign) ? card.textAlign : 'center';
     ta.style.color = card.textColor || 'var(--color-text)';
   }
+  /* Measure in an unscaled, isolated element: scrollHeight on the live
+     textarea is never smaller than its current box and cannot shrink it. */
+  function fitTextSize(card, force) {
+    if (!card || card.type!=='text' || card.pinned) return;
+    var mode=force || card.textSizing || 'fixed';
+    if (mode==='fixed') return;
+    var probe=document.createElement('div');
+    probe.style.cssText='position:fixed;left:-100000px;top:0;visibility:hidden;pointer-events:none;box-sizing:border-box;padding:4px;line-height:1.3;overflow-wrap:break-word;white-space:pre-wrap;';
+    applyTextAppearance(card,probe);
+    probe.style.width=mode==='auto-both'?'max-content':card.w+'px';
+    if(mode==='auto-both')probe.style.maxWidth='4096px';
+    probe.textContent=(card.text||' ')+(String(card.text||'').endsWith('\n')?'\u200b':'');
+    document.body.appendChild(probe);
+    var rect=probe.getBoundingClientRect();
+    if(mode==='auto-both')card.w=Math.max(CARD_MIN_W,Math.min(4096,Math.ceil(rect.width)+2));
+    probe.style.width=card.w+'px';
+    card.h=Math.max(CARD_MIN_H,Math.min(8192,Math.ceil(probe.getBoundingClientRect().height)+2));
+    probe.remove();
+    var el=document.getElementById(card.id);
+    if(el){el.style.width=card.w+'px';el.style.height=card.h+'px';}
+  }
+  function setTextSizing(id, mode) {
+    var card=cards[id];
+    if(!card || card.type!=='text' || card.pinned || !/^(fixed|auto-height|auto-both)$/.test(mode) || (card.textSizing||'fixed')===mode)return;
+    card.textSizing=mode;fitTextSize(card);
+    KanvazApp.markDirty();KanvazHistory.push();emitCardEvent('cardUpdate',card);
+  }
   function setTextStyle(id, patch, persist) {
     var card=cards[id];
     if (!card || card.type!=='text' || card.pinned || !patch) return false;
@@ -2827,7 +2856,7 @@ var KanvazCards = (function() {
     if (typeof patch.textColor==='string' && /^#[0-9a-f]{6}$/i.test(patch.textColor)) values.textColor=patch.textColor;
     for (var key in values) { if (card[key]!==values[key]) {card[key]=values[key];changed=true;} }
     if (!changed) return false;
-    var el=document.getElementById(id);applyTextAppearance(card,el && el.querySelector('.text-body'));
+    var el=document.getElementById(id);applyTextAppearance(card,el && el.querySelector('.text-body'));fitTextSize(card);
     KanvazApp.markDirty();if(persist!==false)KanvazHistory.push();emitCardEvent('cardUpdate',card);
     if (typeof KanvazProperties!=='undefined' && KanvazProperties.isSectionVisible && KanvazProperties.isSectionVisible()) KanvazProperties.refresh();
     return true;
@@ -2843,7 +2872,7 @@ var KanvazCards = (function() {
       if (card.pinned || (KanvazApp.isPresentationModeActive && KanvazApp.isPresentationModeActive()) || (KanvazApp.isMoodLockActive && KanvazApp.isMoodLockActive())) return;
       ta.readOnly=false;el.classList.add('text-editing');ta.focus();
     });
-    ta.addEventListener('input',function(){card.text=ta.value;KanvazApp.markDirty();});
+    ta.addEventListener('input',function(){card.text=ta.value;fitTextSize(card);KanvazApp.markDirty();});
     var textAtFocus=ta.value;
     ta.addEventListener('focus',function(){textAtFocus=ta.value;if(!ta.readOnly)el.classList.add('text-editing');});
     ta.addEventListener('blur',function(){
@@ -6268,6 +6297,7 @@ var KanvazCards = (function() {
       fontBold:typeof c.fontBold==='boolean'?c.fontBold:null,
       fontItalic:!!c.fontItalic,
       textAlign:c.textAlign || null,
+      textSizing:/^(auto-height|auto-both)$/.test(c.textSizing)?c.textSizing:'fixed',
       /* 9.5.2 — Map View per-node note, direct request ("like a comment
          reply... don't show it always"). Independent of a connection's
          own `note` field (connections.js) — this belongs to the NODE
@@ -6747,7 +6777,7 @@ var KanvazCards = (function() {
 
   function nudge(id, dx, dy) {
     var card = cards[id];
-    if (!card || card.pinned) return;
+    if (!card || card.pinned || card.hidden) return;
     card.x += dx;
     card.y += dy;
     var el = document.getElementById(id);
@@ -6868,6 +6898,20 @@ var KanvazCards = (function() {
       KanvazApp.markDirty();
       KanvazHistory.push();
     }
+  }
+
+  /* Explicit edge-to-edge spacing; keep original size and the other axis.
+     Locked and hidden cards do not participate. One undo step per action. */
+  function spaceCards(ids, axis, gap) {
+    if(!ids || !/^(h|v)$/.test(axis) || !isFinite(gap))return;
+    gap=Math.max(0,Math.min(4096,Number(gap)));
+    var pos=axis==='h'?'x':'y',size=axis==='h'?'w':'h';
+    var list=ids.filter(function(id,i){return ids.indexOf(id)===i;}).map(function(id){return cards[id];}).filter(function(c){return c&&!c.pinned&&!c.hidden;});
+    if(list.length<2)return;
+    list.sort(function(a,b){return a[pos]-b[pos] || a.id.localeCompare(b.id);});
+    var cursor=list[0][pos],changed=[];
+    for(var i=0;i<list.length;i++){var c=list[i];if(c[pos]!==cursor){c[pos]=cursor;var el=document.getElementById(c.id);if(el)el.style[axis==='h'?'left':'top']=cursor+'px';changed.push(c);}cursor+=c[size]+gap;}
+    if(changed.length){KanvazApp.markDirty();KanvazHistory.push();for(var j=0;j<changed.length;j++)emitCardEvent('cardUpdate',changed[j]);}
   }
 
   /* Card grouping (Ctrl+G / Ctrl+Shift+G) — a persistent grouping, unlike
@@ -7143,6 +7187,7 @@ var KanvazCards = (function() {
     if (sizeChanged && typeof KanvazAnnotate !== 'undefined') {
       KanvazAnnotate.resize(id, card.w, card.h);
     }
+    if(sizeChanged)fitTextSize(card);
 
     /* persist:false (drag-to-scrub Properties panel fields — see
        properties.js) applies the live value every tick, same as any
@@ -7577,6 +7622,7 @@ var KanvazCards = (function() {
     setTransform:      setTransform,
     alignCards:        alignCards,
     distributeCards:   distributeCards,
+    spaceCards:        spaceCards,
     tidyUp:            tidyUp,
     getAllIds:         getAllIds,
     toggleIsolate:     toggleIsolate,
@@ -7599,6 +7645,7 @@ var KanvazCards = (function() {
     toggleObjectFit:   toggleObjectFit,
     setAdjustment:     setAdjustment,
     setTextStyle:      setTextStyle,
+    setTextSizing:     setTextSizing,
     setTextFontSize:   setTextFontSize,
     setTextColor:      setTextColor,
     showSpeedPicker:   showSpeedPicker,

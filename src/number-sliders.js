@@ -25,7 +25,7 @@
     range._syncNumberSlider=sync;sync();
   }
   function update(){
-    for(var input of document.querySelectorAll('#side-panel-content input[type="number"],#reference-tools-overlay input[type="number"],#text-quick-toolbar input[type="number"]'))enhance(input);
+    for(var input of document.querySelectorAll('#side-panel-content input[type="number"],#reference-tools-overlay input[type="number"],#text-quick-toolbar input[type="number"],#selection-layout-tools input[type="number"]'))enhance(input);
     for(var range of document.querySelectorAll('.number-value-slider'))if(range._syncNumberSlider && document.activeElement!==range)range._syncNumberSlider();
   }
   var pending=false;

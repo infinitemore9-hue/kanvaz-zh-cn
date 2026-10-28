@@ -1,0 +1,66 @@
+const fs=require('fs'),path=require('path'),assert=require('assert'),{spawn}=require('child_process'),pup=require('puppeteer-core');
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+(async()=>{
+  fs.mkdirSync('temp',{recursive:true});const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
+  const child=spawn(path.resolve(process.env.KANVAZ_TEST_EXE||'dist/win-unpacked/Kanvaz 中文版.exe'),['--remote-debugging-port=9398','--user-data-dir='+path.resolve('temp/workflow-'+Date.now())],{env,windowsHide:true,stdio:'ignore'});
+  let browser;
+  try{
+    for(let i=0;i<40;i++){try{browser=await pup.connect({browserURL:'http://127.0.0.1:9398'});break;}catch{await wait(500);}}
+    assert(browser,'packaged app starts');const page=(await browser.pages())[0];await page.setViewport({width:1280,height:900});await page.waitForFunction('typeof KanvazWorkflowTools!=="undefined"');
+    const errors=[];page.on('pageerror',e=>errors.push(e.message));
+    const ids=await page.evaluate(()=>{
+      KanvazBoards.newBoard(true,'排布与文字测试');KanvazUI_Extended.updateSettings({simpleWorkspace:true,hoverColorEnabled:false,edgeSnapEnabled:false,gridSnapEnabled:false});KanvazCanvas.setViewport(0,0,1);
+      const c=document.createElement('canvas');c.width=800;c.height=600;const x=c.getContext('2d');x.fillStyle='#d84b3a';x.fillRect(0,0,800,600);x.fillStyle='#fff';x.font='80px sans-serif';x.fillText('800 × 600',120,320);
+      return [[100,100],[360,160],[700,80]].map(([px,w],i)=>KanvazCards.createFromMedia({type:'image',dataUrl:c.toDataURL(),name:'布局示例 '+(i+1),displayW:w,displayH:100},{x:px,y:150+i*20}).id);
+    });
+    await page.waitForFunction(id=>document.getElementById(id).querySelector('img').complete,{},ids[0]);
+    const state=()=>page.evaluate(()=>({view:KanvazCanvas.getViewport(),selected:KanvazCards.getSelectedIds()}));
+    const at=async(x,y)=>{const p=await page.evaluate(([x,y])=>KanvazCanvas.worldToScreen(x,y),[x,y]);await page.mouse.move(p.x,p.y);return p;};
+    const positions=()=>page.evaluate(ids=>ids.map(id=>{const c=KanvazCards.getAll()[id];return{x:c.x,y:c.y,w:c.w,h:c.h};}),ids);
+    const reset=()=>page.evaluate(ids=>{ids.forEach((id,i)=>KanvazCards.setTransform(id,{x:[100,360,700][i],y:150+i*20}));KanvazCards.setMultiSelection(ids);document.activeElement.blur();KanvazWorkflowTools.sync();},ids);
+    await page.evaluate(ids=>KanvazCards.selectCard(ids[0]),ids);await at(140,190);const original=await state();
+    await page.keyboard.down('Space');await page.waitForFunction(()=>!document.getElementById('temporary-image-preview').hidden);
+    assert.deepEqual(await state(),original);assert(await page.$eval('#temporary-image-preview img',e=>e.naturalWidth===800));await page.screenshot({path:'temp/simple8-preview.png'});
+    await page.keyboard.up('Space');assert(await page.$eval('#temporary-image-preview',e=>e.hidden));assert.deepEqual(await state(),original);
+    console.log('PASS held Space shows original image; release preserves viewport and selection');
+    const start=await at(140,190);await page.keyboard.down('Space');await wait(400);await page.mouse.down();await page.mouse.move(start.x+70,start.y+35,{steps:6});await wait(400);assert(await page.$eval('#temporary-image-preview',e=>e.hidden));await page.mouse.up();await page.keyboard.up('Space');
+    let view=(await state()).view;assert.equal(view.tx,original.view.tx+70);assert.equal(view.ty,original.view.ty+35);
+    console.log('PASS Space plus drag remains pan and cancels temporary preview');
+    await page.evaluate(()=>{KanvazCanvas.setViewport(0,0,1);KanvazUI_Extended.updateSettings({spacePreviewEnabled:false});});await at(140,190);await page.keyboard.down('Space');await wait(450);assert(await page.$eval('#temporary-image-preview',e=>e.hidden));await page.keyboard.up('Space');await page.evaluate(()=>KanvazUI_Extended.updateSettings({spacePreviewEnabled:true}));
+    console.log('PASS preview can be disabled');
+    await reset();await page.waitForFunction(()=>!document.getElementById('selection-layout-tools').hidden);assert(await page.$eval('#selection-layout-tools',e=>!e.open&&e.getBoundingClientRect().height<45));
+    if(!(await page.$eval('#selection-layout-tools',e=>e.open)))await page.click('#selection-layout-tools summary');await page.waitForFunction(()=>document.querySelector('#selection-layout-gap').parentNode.querySelector('[type=range]'));
+    const before=await positions();
+    await page.$eval('#selection-layout-gap',e=>{e.value='24';e.dispatchEvent(new Event('change',{bubbles:true}));});await page.click('#selection-space-h');let p=await positions();
+    assert.equal(p[1].x-p[0].x-p[0].w,24);assert.equal(p[2].x-p[1].x-p[1].w,24);assert.deepEqual(p.map(c=>[c.w,c.h,c.y]),before.map(c=>[c.w,c.h,c.y]));
+    await page.evaluate(()=>KanvazHistory.undo());assert.deepEqual(await positions(),before);await reset();
+    if(!(await page.$eval('#selection-layout-tools',e=>e.open)))await page.click('#selection-layout-tools summary');await page.$eval('#selection-layout-gap',e=>{e.value='0';e.dispatchEvent(new Event('change',{bubbles:true}));});await page.click('#selection-space-h');p=await positions();assert.equal(p[1].x,p[0].x+p[0].w);assert.equal(p[2].x,p[1].x+p[1].w);
+    console.log('PASS explicit 24 px and zero spacing preserve sizes/other axis; one-step undo');
+    await reset();if(!(await page.$eval('#selection-layout-tools',e=>e.open)))await page.click('#selection-layout-tools summary');await page.$eval('#selection-layout-gap',e=>{e.value='24';e.dispatchEvent(new Event('change',{bubbles:true}));});await page.click('#selection-space-v');p=await positions();assert.equal(p[1].y-p[0].y-p[0].h,24);assert.equal(p[2].y-p[1].y-p[1].h,24);
+    await reset();if(!(await page.$eval('#selection-layout-tools',e=>e.open)))await page.click('#selection-layout-tools summary');await page.click('#selection-equal-h');p=await positions();assert.equal(p[0].x,before[0].x);assert.equal(p[2].x,before[2].x);assert.equal(p[1].x-p[0].x-p[0].w,p[2].x-p[1].x-p[1].w);
+    await page.click('#selection-align-top');p=await positions();assert(p.every(c=>c.y===150));
+    await page.evaluate(ids=>{KanvazCards.getAll()[ids[1]].pinned=true;KanvazCards.spaceCards(ids,'h',0);},ids);assert.equal((await positions())[1].x,p[1].x);await page.evaluate(ids=>{KanvazCards.getAll()[ids[1]].pinned=false;},ids);
+    console.log('PASS vertical spacing, equal horizontal gaps, alignment and locked-item exclusion');
+    await reset();if(!(await page.$eval('#selection-layout-tools',e=>e.open)))await page.click('#selection-layout-tools summary');await page.$eval('#selection-layout-gap',e=>{const r=e.parentNode.querySelector('[type=range]');r.focus();});const unchanged=await positions();await page.keyboard.press('ArrowRight');assert.deepEqual(await positions(),unchanged);
+    await page.evaluate(()=>document.activeElement.blur());await page.keyboard.press('ArrowRight');await page.keyboard.down('Shift');await page.keyboard.press('ArrowDown');await page.keyboard.up('Shift');await wait(380);p=await positions();assert.deepEqual(p.map(c=>[c.x,c.y]),unchanged.map(c=>[c.x+1,c.y+10]));await page.evaluate(()=>KanvazHistory.undo());assert.deepEqual(await positions(),unchanged);
+    await page.evaluate(ids=>{KanvazCanvas.setViewport(0,0,.5);KanvazCards.selectCard(ids[0]);document.activeElement.blur();},ids);const half=(await positions())[0];await page.keyboard.press('ArrowLeft');await wait(380);assert.equal((await positions())[0].x,half.x-1);
+    await page.evaluate(()=>{const el=document.createElement('div');el.id='input-guard-test';el.contentEditable='true';el.textContent='editable';document.body.appendChild(el);el.focus();});const guard=await positions();await page.keyboard.press('ArrowRight');assert.deepEqual(await positions(),guard);await page.evaluate(()=>document.getElementById('input-guard-test').remove());
+    await page.evaluate(()=>{const el=document.createElement('div');el.id='modal-guard-test';el.className='modal-overlay';document.body.appendChild(el);document.activeElement.blur();});await page.keyboard.press('ArrowRight');assert.deepEqual(await positions(),guard);await page.evaluate(()=>document.getElementById('modal-guard-test').remove());
+    console.log('PASS 1/10 canvas-pixel nudge, multi-selection undo, zoom independence, slider/contenteditable/modal guards');
+    await page.evaluate(()=>{KanvazUI.showDialog('操作保护测试','方向键应保留画布位置',[{label:'Close',action:function(){}}]);document.activeElement.blur();});await page.keyboard.press('ArrowRight');assert.deepEqual(await positions(),guard);await page.click('#dialog-btns button');
+    await page.evaluate(()=>{document.body.classList.add('reference-view');KanvazWorkflowTools.sync();});assert(await page.$eval('#selection-layout-tools',e=>e.hidden));await page.evaluate(()=>document.body.classList.remove('reference-view'));
+    console.log('PASS actual application dialog blocks nudge; reference view hides layout controls');
+    const textId=await page.evaluate(()=>{KanvazCanvas.setViewport(0,0,1);return KanvazCards.createTextCard(450,320).id;});await wait(100);await page.keyboard.type('文字自适应测试');await page.keyboard.press('Escape');await page.waitForFunction(()=>!document.getElementById('text-quick-toolbar').hidden);await page.click('#text-quick-layout summary');
+    await page.select('#text-quick-sizing','auto-both');const textState=()=>page.evaluate(id=>{const c=KanvazCards.getAll()[id];return{w:c.w,h:c.h,mode:c.textSizing,text:c.text};},textId);
+    let t=await textState();assert.equal(t.mode,'auto-both');await page.evaluate(id=>KanvazCards.setTextStyle(id,{fontSize:64}),textId);assert((await textState()).w>t.w);
+    await page.select('#text-quick-sizing','auto-height');await page.evaluate(id=>KanvazCards.setTransform(id,{w:180}),textId);
+    await page.evaluate(id=>{const ta=document.getElementById(id).querySelector('.text-body');ta.readOnly=false;ta.focus();ta.value=Array(8).fill('长文字自动换行').join('\n');ta.dispatchEvent(new Event('input',{bubbles:true}));ta.blur();},textId);t=await textState();assert.equal(t.w,180);assert(t.h>300);
+    await page.evaluate(id=>{const ta=document.getElementById(id).querySelector('.text-body');ta.readOnly=false;ta.focus();ta.value='短';ta.dispatchEvent(new Event('input',{bubbles:true}));ta.blur();},textId);assert((await textState()).h<t.h);assert.equal((await textState()).w,180);
+    await page.evaluate(()=>{const list=KanvazCards.serialise();KanvazCards.deserialise(list);});assert.equal((await textState()).mode,'auto-height');await page.evaluate(id=>{KanvazCards.selectCard(id);KanvazTextTools.sync();},textId);await wait(200);await page.click('#text-quick-layout summary');
+    const previous=await textState();await page.select('#text-quick-sizing','fixed');await page.evaluate(()=>KanvazHistory.undo());assert.deepEqual(await textState(),previous);
+    console.log('PASS text sizing dropdown, font/content/width response, shrink, persistence and mode undo');
+    await page.evaluate(()=>document.getElementById('language-switch').click());await wait(120);assert.equal(await page.$eval('#selection-layout-tools summary',e=>e.textContent),'Arrange selection');await page.evaluate(()=>document.getElementById('language-switch').click());await wait(120);assert.equal(await page.$eval('#selection-layout-tools summary',e=>e.textContent),'排列选中对象');
+    await reset();await wait(220);if(!(await page.$eval('#selection-layout-tools',e=>e.open)))await page.click('#selection-layout-tools summary');await wait(400);assert(await page.$eval('#selection-layout-tools',e=>e.open),'palette remains open above undo feedback');await page.evaluate(()=>document.getElementById('toast-container').replaceChildren());await page.screenshot({path:'temp/simple8-layout.png'});
+    assert.deepEqual(errors,[]);console.log('PASS Chinese/English labels and no renderer exceptions');console.log('ALL WORKFLOW TOOLS TESTS PASSED');
+  }finally{if(browser)await browser.disconnect();child.kill();}
+})().catch(e=>{console.error(e);process.exitCode=1;});

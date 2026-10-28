@@ -36,6 +36,11 @@ var KanvazTextTools=(function(){
   button('text-quick-edit','Edit text','Edit text',edit);
   var layout=make('details','text-quick-layout'),summary=document.createElement('summary');summary.textContent='Position and size';layout.appendChild(summary);
   var geometry=document.createElement('div');geometry.className='text-quick-geometry';layout.appendChild(geometry);
+  var sizingLabel=document.createElement('label');sizingLabel.textContent='Text box sizing';
+  var sizing=document.createElement('select');sizing.id='text-quick-sizing';sizing.setAttribute('aria-label','Text box sizing');
+  for(var entry of [['fixed','Fixed box'],['auto-height','Fixed width, auto height'],['auto-both','Auto width and height']]){var opt=document.createElement('option');opt.value=entry[0];opt.textContent=entry[1];sizing.appendChild(opt);}
+  sizingLabel.appendChild(sizing);geometry.appendChild(sizingLabel);
+  sizing.onchange=function(){if(active)KanvazCards.setTextSizing(active.id,sizing.value);sync();};
   var fields={};
   for(var item of [['x','X'],['y','Y'],['w','Width'],['h','Height']]){
     (function(key,title){var label=document.createElement('label');label.textContent=title;var input=document.createElement('input');input.type='number';input.step='1';input.id='text-quick-'+key;input.setAttribute('aria-label',title);if(key==='w'||key==='h')input.min='80';label.appendChild(input);geometry.appendChild(label);fields[key]=input;var changed=false;
@@ -59,6 +64,7 @@ var KanvazTextTools=(function(){
     if(document.activeElement!==size)size.value=c.fontSize||22;
     if(document.activeElement!==align)align.value=c.textAlign||'center';
     if(document.activeElement!==color)color.value=c.textColor||'#dcdce8';
+    if(document.activeElement!==sizing)sizing.value=c.textSizing||'fixed';
     bold.setAttribute('aria-pressed',c.fontBold===false?'false':'true');italic.setAttribute('aria-pressed',c.fontItalic?'true':'false');
     for(var control of bar.querySelectorAll('input,select,button'))control.disabled=!!c.pinned;
     var h=bar.offsetHeight,w=bar.offsetWidth;

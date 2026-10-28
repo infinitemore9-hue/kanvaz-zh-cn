@@ -1,6 +1,23 @@
 /* Presentation-only localization: never rewrite stored board data or input values. */
 (function() {
-  var pairs = `Color readout position|取色框位置
+  var pairs = `Temporary preview · release Space to return|临时预览 · 松开空格返回画布
+Hold Space over image to preview|图片上按住空格临时预览
+Hold Space|按住空格
+Temporary image preview|临时图片预览
+Arrange selection|排列选中对象
+Align horizontal centers|水平居中对齐
+Align vertical centers|垂直居中对齐
+Equal horizontal gaps|水平等距分布
+Equal vertical gaps|垂直等距分布
+Spacing (canvas px)|间距（画布像素）
+Apply horizontal spacing|应用水平间距
+Apply vertical spacing|应用垂直间距
+Locked items stay in place · arrows: 1 px · Shift: 10 px|锁定对象保持原位 · 方向键移动 1 像素 · 按住 Shift 移动 10 像素
+Text box sizing|文字框尺寸模式
+Fixed box|固定尺寸
+Fixed width, auto height|固定宽度，自动高度
+Auto width and height|自动宽度与高度
+Color readout position|取色框位置
 Fixed corner|固定右下角
 Follow cursor|跟随鼠标
 Floating panel|独立浮动框
