@@ -1,6 +1,33 @@
 /* Presentation-only localization: never rewrite stored board data or input values. */
 (function() {
-  var pairs = `Unofficial Chinese fork|非官方简体中文修改版
+  var pairs = `Position and size|位置与尺寸
+Font family|字体
+Default font|默认字体
+Microsoft YaHei|微软雅黑
+SimSun|宋体
+Sans serif|无衬线
+Serif|衬线
+Monospace|等宽
+Bold|加粗
+Italic|斜体
+Text alignment|文字对齐
+Align left|左对齐
+Align center|居中
+Align right|右对齐
+Fit text box|适应文字
+Edit text|编辑文字
+Add text label|添加文字
+Drag to move text|拖动移动文字
+Text formatting|文字格式
+Show image color on hover|悬停显示图片颜色
+Copied color format|复制颜色格式
+Source image color|原图颜色
+Fully transparent|全透明像素
+Pixel|像素
+Copy color|复制颜色
+No visible color to copy|无可见颜色，不能复制
+Color copied|颜色已复制
+Unofficial Chinese fork|非官方简体中文修改版
 Update this fork manually|此修改版请手动更新
 Download updates from the unofficial fork release page|请从此修改版的发行页面下载更新
 Upstream project on GitHub|查看原项目

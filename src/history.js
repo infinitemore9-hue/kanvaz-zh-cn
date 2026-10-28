@@ -160,6 +160,7 @@ var KanvazHistory = (function() {
   /* ── Restore snapshot ── */
 
   function restore(snap) {
+    var selectedBefore = KanvazCards.getSelectedIds ? KanvazCards.getSelectedIds() : [];
     locked = true;
 
     /* deserialise() does a full clearAll()/rebuild of every card's DOM
@@ -197,6 +198,8 @@ var KanvazHistory = (function() {
     }
 
     locked = false;
+    var survivingSelection = selectedBefore.filter(function(id) { return !!KanvazCards.getAll()[id]; });
+    if (survivingSelection.length && KanvazCards.setMultiSelection) KanvazCards.setMultiSelection(survivingSelection);
     KanvazApp.markDirty();
 
     /* Refresh inspector if open */

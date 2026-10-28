@@ -262,6 +262,7 @@ var KanvazCards = (function() {
         return;
       }
 
+      if (target.tagName === 'TEXTAREA' && target.readOnly) { e.preventDefault(); target.blur(); }
       if (card.pinned) return;
 
       startDrag(card, cardEl, e);
@@ -2783,100 +2784,57 @@ var KanvazCards = (function() {
 
   /* ── Bare text label ── */
 
-  var TEXT_FONT_SIZE_MIN = 10, TEXT_FONT_SIZE_MAX = 72, TEXT_FONT_SIZE_DEFAULT = 22;
+  var TEXT_FONT_SIZE_MIN = 10, TEXT_FONT_SIZE_MAX = 512, TEXT_FONT_SIZE_DEFAULT = 22;
 
+  var TEXT_FONT_FAMILIES = {
+    default:'var(--font-ui)',sans:'sans-serif',serif:'serif',mono:'monospace',
+    yahei:'"Microsoft YaHei", "PingFang SC", sans-serif',simsun:'SimSun, "Songti SC", serif',arial:'Arial, sans-serif'
+  };
+  function applyTextAppearance(card, ta) {
+    if (!ta) return;
+    ta.style.fontSize = Math.max(TEXT_FONT_SIZE_MIN,Math.min(TEXT_FONT_SIZE_MAX,Number(card.fontSize)||TEXT_FONT_SIZE_DEFAULT))+'px';
+    ta.style.fontFamily = TEXT_FONT_FAMILIES[card.fontFamily] || TEXT_FONT_FAMILIES.default;
+    ta.style.fontWeight = card.fontBold == null ? '600' : card.fontBold ? '700' : '400';
+    ta.style.fontStyle = card.fontItalic ? 'italic' : 'normal';
+    ta.style.textAlign = /^(left|center|right)$/.test(card.textAlign) ? card.textAlign : 'center';
+    ta.style.color = card.textColor || 'var(--color-text)';
+  }
+  function setTextStyle(id, patch, persist) {
+    var card=cards[id];
+    if (!card || card.type!=='text' || card.pinned || !patch) return false;
+    var values={},changed=false;
+    if (typeof patch.fontSize==='number' && isFinite(patch.fontSize)) values.fontSize=Math.max(TEXT_FONT_SIZE_MIN,Math.min(TEXT_FONT_SIZE_MAX,patch.fontSize));
+    if (typeof patch.fontFamily==='string' && Object.prototype.hasOwnProperty.call(TEXT_FONT_FAMILIES,patch.fontFamily)) values.fontFamily=patch.fontFamily;
+    if (typeof patch.fontBold==='boolean') values.fontBold=patch.fontBold;
+    if (typeof patch.fontItalic==='boolean') values.fontItalic=patch.fontItalic;
+    if (/^(left|center|right)$/.test(patch.textAlign)) values.textAlign=patch.textAlign;
+    if (typeof patch.textColor==='string' && /^#[0-9a-f]{6}$/i.test(patch.textColor)) values.textColor=patch.textColor;
+    for (var key in values) { if (card[key]!==values[key]) {card[key]=values[key];changed=true;} }
+    if (!changed) return false;
+    var el=document.getElementById(id);applyTextAppearance(card,el && el.querySelector('.text-body'));
+    KanvazApp.markDirty();if(persist!==false)KanvazHistory.push();emitCardEvent('cardUpdate',card);
+    if (typeof KanvazProperties!=='undefined' && KanvazProperties.isSectionVisible && KanvazProperties.isSectionVisible()) KanvazProperties.refresh();
+    return true;
+  }
   function buildTextCard(el, card) {
-    var ta = document.createElement('textarea');
-    ta.className = 'text-body';
-    ta.placeholder = 'Text';
-    ta.value = card.text || '';
-    /* 9.5.2 — font-size and text color, direct request. Applied as inline
-       overrides on top of .text-body's own CSS defaults (22px, currentColor
-       via var(--color-text)) so an unset card renders pixel-identical to
-       before this feature existed. */
-    var fs = (typeof card.fontSize === 'number' && isFinite(card.fontSize))
-      ? Math.max(TEXT_FONT_SIZE_MIN, Math.min(TEXT_FONT_SIZE_MAX, card.fontSize)) : TEXT_FONT_SIZE_DEFAULT;
-    ta.style.cssText = 'width:100%;height:100%;font-size:' + fs + 'px;' + (card.textColor ? 'color:' + card.textColor + ';' : '');
-
-    /* Real bug found via live user audit: this textarea covers 100% of
-       the card (no card-bar footer for type 'text' — see the comment
-       on this file's world mousedown handler), so leaving it always
-       directly editable meant the card had literally no surface a
-       click-drag could grab; every click hit the "inputs receive focus
-       normally, skip drag" rule. Fixed with the same double-click-to-edit
-       convention this codebase already uses for renaming (Layers panel
-       rows, card-bar titles): readonly by default so a plain click+
-       drag moves the card like any other type, real editing only after
-       an explicit double-click. */
-    ta.readOnly = true;
-
-    /* Mini floating toolbar (font-size stepper + color swatch), shown only
-       while actively editing this card's text — direct request, decided
-       as "whatever's best and handy": full controls live in Properties
-       (see renderTextSection there) for when the card isn't selected/
-       being typed in, but a quick in-place control avoids having to leave
-       the canvas mid-edit for the two most common tweaks. */
-    var miniBar = document.createElement('div');
-    miniBar.className = 'text-mini-toolbar';
-    var sizeDown = document.createElement('button');
-    sizeDown.type = 'button'; sizeDown.textContent = 'A−'; sizeDown.title = 'Smaller text';
-    var sizeUp = document.createElement('button');
-    sizeUp.type = 'button'; sizeUp.textContent = 'A+'; sizeUp.title = 'Larger text';
-    var colorInput = document.createElement('input');
-    colorInput.type = 'color';
-    colorInput.title = 'Text color';
-    colorInput.value = card.textColor || '#dcdce8';
-    function applyFontSize(v) {
-      var clamped = Math.max(TEXT_FONT_SIZE_MIN, Math.min(TEXT_FONT_SIZE_MAX, v));
-      card.fontSize = clamped;
-      ta.style.fontSize = clamped + 'px';
-      KanvazApp.markDirty();
-      KanvazHistory.push();
-    }
-    sizeDown.addEventListener('mousedown', function(e) { e.preventDefault(); });
-    sizeUp.addEventListener('mousedown', function(e) { e.preventDefault(); });
-    sizeDown.addEventListener('click', function() { applyFontSize((card.fontSize || TEXT_FONT_SIZE_DEFAULT) - 2); });
-    sizeUp.addEventListener('click', function() { applyFontSize((card.fontSize || TEXT_FONT_SIZE_DEFAULT) + 2); });
-    colorInput.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-    colorInput.addEventListener('input', function() {
-      card.textColor = colorInput.value;
-      ta.style.color = colorInput.value;
-      KanvazApp.markDirty();
-    });
-    colorInput.addEventListener('change', function() { KanvazHistory.push(); });
-    miniBar.appendChild(sizeDown);
-    miniBar.appendChild(sizeUp);
-    miniBar.appendChild(colorInput);
-    el.appendChild(miniBar);
-
-    ta.addEventListener('dblclick', function(e) {
+    var ta=document.createElement('textarea');ta.className='text-body';ta.placeholder='Text';ta.value=card.text || '';ta.readOnly=true;
+    applyTextAppearance(card,ta);
+    var grip=document.createElement('span');grip.className='text-move-grip';grip.textContent='⠿';grip.title='Drag to move text';grip.setAttribute('aria-label','Drag to move text');
+    grip.addEventListener('mousedown',function(e){e.preventDefault();ta.blur();});
+    el.appendChild(grip);
+    ta.addEventListener('dblclick',function(e){
       e.stopPropagation();
-      ta.readOnly = false;
-      ta.focus();
-      miniBar.classList.add('visible');
+      if (card.pinned || (KanvazApp.isPresentationModeActive && KanvazApp.isPresentationModeActive()) || (KanvazApp.isMoodLockActive && KanvazApp.isMoodLockActive())) return;
+      ta.readOnly=false;el.classList.add('text-editing');ta.focus();
     });
-
-    ta.addEventListener('input', function() {
-      card.text = ta.value;
-      KanvazApp.markDirty();
+    ta.addEventListener('input',function(){card.text=ta.value;KanvazApp.markDirty();});
+    var textAtFocus=ta.value;
+    ta.addEventListener('focus',function(){textAtFocus=ta.value;if(!ta.readOnly)el.classList.add('text-editing');});
+    ta.addEventListener('blur',function(){
+      ta.readOnly=true;el.classList.remove('text-editing');
+      if(ta.value===textAtFocus)return;textAtFocus=ta.value;KanvazHistory.push();emitCardEvent('cardUpdate',card);
     });
-
-    var labelTextAtFocus = ta.value;
-    ta.addEventListener('focus', function() { labelTextAtFocus = ta.value; });
-    ta.addEventListener('blur', function() {
-      ta.readOnly = true;
-      /* Delay hiding by one tick so a click on the mini toolbar's own
-         color/size buttons (which steal focus from the textarea) doesn't
-         immediately hide the very control being clicked. */
-      setTimeout(function() {
-        if (document.activeElement !== colorInput) miniBar.classList.remove('visible');
-      }, 0);
-      if (ta.value === labelTextAtFocus) return; /* nothing changed, no undo step */
-      labelTextAtFocus = ta.value;
-      KanvazHistory.push();
-      emitCardEvent('cardUpdate', card);
-    });
-
+    ta.addEventListener('keydown',function(e){if(e.key==='Escape' || ((e.ctrlKey||e.metaKey)&&e.key==='Enter')){e.preventDefault();e.stopPropagation();ta.blur();}});
     el.appendChild(ta);
   }
 
@@ -6290,6 +6248,10 @@ var KanvazCards = (function() {
          neither field keeps rendering exactly as before. */
       fontSize:  c.fontSize  || null,
       textColor: c.textColor || null,
+      fontFamily:c.fontFamily || null,
+      fontBold:typeof c.fontBold==='boolean'?c.fontBold:null,
+      fontItalic:!!c.fontItalic,
+      textAlign:c.textAlign || null,
       /* 9.5.2 — Map View per-node note, direct request ("like a comment
          reply... don't show it always"). Independent of a connection's
          own `note` field (connections.js) — this belongs to the NODE
@@ -7620,6 +7582,7 @@ var KanvazCards = (function() {
     isOnionSkinOn:     isOnionSkinOn,
     toggleObjectFit:   toggleObjectFit,
     setAdjustment:     setAdjustment,
+    setTextStyle:      setTextStyle,
     setTextFontSize:   setTextFontSize,
     setTextColor:      setTextColor,
     showSpeedPicker:   showSpeedPicker,

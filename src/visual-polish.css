@@ -32,3 +32,28 @@ body.show-transparency-grid .alpha-image:hover,body.show-transparency-grid .alph
 .alpha-image:hover>.alpha-content-outline,.alpha-image.selected>.alpha-content-outline{display:block}
 .card-image img{position:relative;z-index:1}
 .align-guide{background:#5fd4c4;opacity:1;z-index:99999}
+/* Text labels retain a direct move surface even while editing. */
+#simple-workspace-text{width:auto!important;padding:0 12px;font:12px var(--font-ui);white-space:nowrap;-webkit-app-region:no-drag}
+.card-text{overflow:visible!important}
+.card-text.selected,.card-text.multi-selected{outline:1px solid var(--color-accent)}
+.card-text .text-body[readonly]{cursor:move}
+.text-move-grip{position:absolute;left:-24px;top:0;width:22px;height:30px;display:flex;align-items:center;justify-content:center;cursor:grab;background:var(--color-surface);border:1px solid var(--color-border-2);border-radius:5px;color:var(--color-text-2);font:20px var(--font-ui);opacity:0;pointer-events:none;z-index:8;user-select:none}
+.card-text.selected .text-move-grip,.card-text.multi-selected .text-move-grip,.card-text:hover .text-move-grip{opacity:1;pointer-events:auto}
+#text-quick-toolbar{position:fixed;z-index:90000;display:flex;align-items:center;gap:5px;padding:6px;max-width:calc(100vw - 16px);flex-wrap:wrap;border:1px solid var(--color-border-2);border-radius:8px;background:var(--color-surface);box-shadow:0 4px 18px rgba(0,0,0,.2);font:12px var(--font-ui);color:var(--color-text)}
+#text-quick-toolbar[hidden]{display:none}
+#text-quick-toolbar button,#text-quick-toolbar select,#text-quick-toolbar input{height:28px;box-sizing:border-box;border:1px solid var(--color-border);border-radius:4px;background:var(--color-surface-2);color:var(--color-text);font:12px var(--font-ui);padding:3px 6px;min-width:28px}
+#text-quick-toolbar button{cursor:pointer}
+#text-quick-toolbar button[aria-pressed=true]{background:var(--color-accent-bg);border-color:var(--color-accent)}
+#text-quick-font{width:112px}#text-quick-size{width:57px}#text-quick-align{width:83px}#text-quick-toolbar #text-quick-color{width:32px;padding:2px}
+#text-quick-toolbar :disabled{opacity:.45;cursor:default}
+.number-slider-field{display:inline-flex;flex-direction:column;gap:4px;min-width:84px;max-width:100%;vertical-align:middle;flex-shrink:1}
+.number-slider-field>input[type=number]{width:100%!important;min-width:0;box-sizing:border-box}
+.number-slider-field>.number-value-slider{width:100%;height:14px!important;margin:0!important;padding:0!important;accent-color:var(--color-accent);cursor:ew-resize;min-width:64px}
+#text-quick-toolbar .number-slider-field{width:90px}
+#text-quick-layout{flex-basis:100%;font:11px var(--font-ui);color:var(--color-text-2)}
+#text-quick-layout summary{cursor:pointer;padding:3px}
+.text-quick-geometry{display:grid;grid-template-columns:repeat(4,minmax(85px,1fr));gap:8px;padding:5px 2px 2px}
+.text-quick-geometry label{display:flex;flex-direction:column;gap:4px}
+#text-quick-toolbar .text-quick-geometry .number-slider-field{width:100%}
+@media(max-width:650px){.text-quick-geometry{grid-template-columns:repeat(2,minmax(85px,1fr))}}
+#text-quick-toolbar{width:max-content;max-width:min(640px,calc(100vw - 16px))}

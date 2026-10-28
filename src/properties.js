@@ -530,15 +530,20 @@ var KanvazProperties = (function() {
 
       var input = document.createElement('input');
       input.type = 'number';
+      input.setAttribute('aria-label',label);
+      if (key === 'w' || key === 'h') input.min = '80';
       input.value = Math.round(value);
       input.style.cssText = INPUT_CSS;
       input.disabled = !!disabled;
       if (disabled) input.style.opacity = '0.5';
+      var lastCommitted = Number(input.value);
+      function commitField() { var n=parseFloat(input.value);if(isFinite(n) && n!==lastCommitted){onCommit(n);lastCommitted=n;} }
+      input.addEventListener('input',function(){var n=parseFloat(input.value);if(isFinite(n)){var patch={};patch[key]=n;KanvazCards.setTransform(cardId,patch,false);}});
+      input.addEventListener('change',commitField);
       input.onfocus = function() { input.style.borderColor = INPUT_FOCUS_BORDER; };
       input.onblur = function() {
         input.style.borderColor = 'var(--color-border)';
-        var n = parseFloat(input.value);
-        if (isFinite(n)) onCommit(n);
+        commitField();
       };
       input.addEventListener('keydown', function(e) {
         if (e.key === 'Enter') input.blur();
@@ -554,7 +559,7 @@ var KanvazProperties = (function() {
           patch[key] = n;
           KanvazCards.setTransform(cardId, patch, false);
         },
-        onCommit: onCommit
+        onCommit: function(n) { onCommit(n);lastCommitted=n; }
       });
     }
 
@@ -989,7 +994,7 @@ var KanvazProperties = (function() {
     sizeLabel.textContent = 'Font size';
     var sizeInput = document.createElement('input');
     sizeInput.type = 'number';
-    sizeInput.min = 10; sizeInput.max = 72;
+    sizeInput.min = 10; sizeInput.max = 512;
     sizeInput.value = card.fontSize || 22;
     sizeInput.style.cssText = 'width:52px;padding:3px 6px;border:1px solid var(--color-border);border-radius:4px;background:var(--color-surface-2);color:var(--color-text);font-family:var(--font-ui);font-size:11px;text-align:right;';
     sizeInput.addEventListener('input', function() {
