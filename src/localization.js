@@ -407,6 +407,7 @@ Snap increment|吸附间距
 Minor (24px)|细网格（24px）
 Major (120px)|主网格（120px）
 Always on top (default: on)|窗口始终置顶（默认开启）
+Always on top (default: off)|窗口始终置顶（默认关闭）
 Files & Search|文件与搜索
 Autosave (seconds)|自动保存间隔（秒）
 Default card width (px)|默认卡片宽度（像素）

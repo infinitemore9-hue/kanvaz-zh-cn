@@ -164,10 +164,10 @@ var KanvazUI_Extended = (function() {
     confirmDelete:    false,
     defaultCardW:     600,
     animationsOn:     true,
-    /* v6.3.0: default flipped to true — see the v2->v3 settings
-       migration below for why existing users' saved settings get this
-       too, not just fresh installs. */
-    alwaysOnTop:      true,
+    /* Normal window stacking unless the user explicitly enables pinning.
+       The fork marker below migrates the legacy forced-on default once. */
+    alwaysOnTop:      false,
+    normalWindowV1:   true,
     smartFolders:     [],
     /* v6.3.0 — Smart Search: lemmatized/fuzzy text matching (wink-nlp,
        pure JS, on-device, no data leaves the machine). Defaults OFF —
@@ -283,6 +283,7 @@ var KanvazUI_Extended = (function() {
           }
           settings._version = SETTINGS_VERSION;
           if (!loaded.strongSnapV1) { settings.edgeSnapDistance = 12; settings.strongSnapV1 = true; migrated = true; }
+          if (!loaded.normalWindowV1) { settings.alwaysOnTop = false; settings.normalWindowV1 = true; migrated = true; }
           applySettings();
           /* Persist migrated settings so migration only runs once */
           if (migrated) {
@@ -759,7 +760,7 @@ var KanvazUI_Extended = (function() {
       { key:'edgeSnapDistance', label:'Edge snap distance (screen px)', type:'number', min:2, max:24 },
       { key: 'gridSnapEnabled', label: 'Snap to grid (move & resize)', type: 'toggle' },
       { key: 'gridSnapIncrement', label: 'Snap increment', type: 'select', options: [['minor','Minor (24px)'],['major','Major (120px)']] },
-      { key: 'alwaysOnTop',     label: 'Always on top (default: on)', type: 'toggle' },
+      { key: 'alwaysOnTop',     label: 'Always on top (default: off)', type: 'toggle' },
       { section: 'Files & Search' },
       { key: 'autosaveInterval',label: 'Autosave (seconds)',    type: 'number', min: 10, max: 300 },
       { key: 'defaultCardW',    label: 'Default card width (px)',type: 'number', min: 80, max: 1200 },
@@ -1515,7 +1516,7 @@ var KanvazUI_Extended = (function() {
       '</div>',
       '<div class="about-title">Kanvaz 中文版</div>',
       '<div class="about-subtitle">A visual reference board for VFX, 3D, and game art.</div>',
-      '<div class="about-version">v' + appVersion + ' · cn.simple.8</div>',
+      '<div class="about-version">v' + appVersion + ' · cn.simple.9</div>',
       '<div class="about-subtitle">Unofficial Chinese fork</div>',
       '<div id="about-update-status" class="about-update-status"></div>',
       '<div class="about-divider"></div>',
