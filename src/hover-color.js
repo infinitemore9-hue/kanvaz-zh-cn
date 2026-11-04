@@ -76,7 +76,7 @@ var KanvazHoverColor = (function() {
     if(!value || !value.a || !navigator.clipboard || !navigator.clipboard.writeText)return;
     var formatName=preferences().hoverColorFormat||'hex',copied=formatName==='rgb'?value.rgb:formatName==='hsl'?value.hsl:value.hex;
     if(formatName==='rgb' && value.a<255)copied='rgba('+value.r+', '+value.g+', '+value.b+', '+(value.a/255).toFixed(3)+')';
-    navigator.clipboard.writeText(copied).then(function(){KanvazUI.toast(label('Color copied'));}).catch(function(){KanvazUI.toast(label('Could not copy to clipboard'),'error');});
+    navigator.clipboard.writeText(copied).then(function(){document.dispatchEvent(new CustomEvent('kanvaz-color-copied',{detail:Object.assign({},value)}));KanvazUI.toast(label('Color copied'));}).catch(function(){KanvazUI.toast(label('Could not copy to clipboard'),'error');});
   }
   shadow.querySelector('.expand').onclick=toggleDetails;
   shadow.querySelector('.close').onclick=function(){KanvazUI_Extended.updateSettings({hoverColorEnabled:false});hide();};

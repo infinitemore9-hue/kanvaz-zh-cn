@@ -240,28 +240,32 @@ var KanvazCanvas = (function() {
     zoomFit(ids);
   }
 
-  /* View bookmarks (Ctrl+1..9 to save, 1..9 to recall) — Maya/Photoshop-
-     style numbered camera bookmarks. Deliberately session-only (an
-     in-memory object, never written to the board file): the exact same
-     scoping decision this codebase already made for 3D card orbit
-     position ("NOT persisted by design"), and it sidesteps any board
-     file schema/migration question entirely. A bookmark simply stops
-     existing once the board is closed or reloaded. */
+  /* Named view slots: Ctrl+1..9 saves, 1..9 recalls. boards.js stores
+     these per board and resets them when loading an older/empty board. */
   var viewBookmarks = {};
 
-  function saveViewBookmark(slot) {
-    viewBookmarks[slot] = { tx: tx, ty: ty, scale: scale };
-    if (typeof KanvazUI !== 'undefined') KanvazUI.toast('View ' + slot + ' saved');
+  function saveViewBookmark(slot, name) {
+    if(!/^[1-9]$/.test(String(slot)))return;
+    viewBookmarks[slot] = { tx: tx, ty: ty, scale: scale, name:typeof name==='string'?name.trim().slice(0,80):(viewBookmarks[slot]&&viewBookmarks[slot].name)||'' };
+    if(typeof KanvazApp!=='undefined')KanvazApp.markDirty();
+    if (typeof KanvazUI !== 'undefined') KanvazUI.toast('View bookmark saved');
   }
 
   function recallViewBookmark(slot) {
     var v = viewBookmarks[slot];
     if (!v) {
-      if (typeof KanvazUI !== 'undefined') KanvazUI.toast('No view saved for ' + slot + ' — Ctrl+' + slot + ' to save one', 'error');
+      if (typeof KanvazUI !== 'undefined') KanvazUI.toast('View slot is empty — save it first', 'error');
       return;
     }
     setViewport(v.tx, v.ty, v.scale);
   }
+  function getViewBookmarks(){return JSON.parse(JSON.stringify(viewBookmarks));}
+  function setViewBookmarks(values){
+    viewBookmarks={};
+    if(!values||typeof values!=='object')return;
+    for(var slot in values){var v=values[slot];if(/^[1-9]$/.test(slot)&&v&&typeof v.tx==='number'&&isFinite(v.tx)&&typeof v.ty==='number'&&isFinite(v.ty)&&typeof v.scale==='number'&&isFinite(v.scale)&&v.scale>0)viewBookmarks[slot]={tx:v.tx,ty:v.ty,scale:Math.max(ZOOM_MIN,Math.min(ZOOM_MAX,v.scale)),name:typeof v.name==='string'?v.name.slice(0,80):''};}
+  }
+  function removeViewBookmark(slot){if(viewBookmarks[slot]){delete viewBookmarks[slot];if(typeof KanvazApp!=='undefined')KanvazApp.markDirty();}}
 
   function panBy(dx, dy) {
     tx += dx;
@@ -1050,6 +1054,9 @@ var KanvazCanvas = (function() {
     zoomToSelection: zoomToSelection,
     saveViewBookmark: saveViewBookmark,
     recallViewBookmark: recallViewBookmark,
+    getViewBookmarks:getViewBookmarks,
+    setViewBookmarks:setViewBookmarks,
+    removeViewBookmark:removeViewBookmark,
     panBy:          panBy,
     panTo:          panTo,
     startExternalPan: startExternalPan,

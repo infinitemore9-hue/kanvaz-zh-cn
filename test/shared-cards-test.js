@@ -25,6 +25,7 @@ var assert = require('assert');
 global.document = { getElementById: function() { return null; }, createElement: function() { return { style: {} }; } };
 
 var liveCards = []; /* what "the active board's real card state" currently holds, per KanvazCards.deserialise() */
+var liveBookmarks = {};
 global.KanvazCards = {
   serialise: function() { return liveCards; },
   deserialise: function(arr) { liveCards = arr || []; },
@@ -32,7 +33,9 @@ global.KanvazCards = {
 };
 global.KanvazCanvas = {
   getTx: function() { return 0; }, getTy: function() { return 0; }, getScale: function() { return 1; },
-  setViewport: function() {}, zoomReset: function() {}
+  setViewport: function() {}, zoomReset: function() {},
+  getViewBookmarks: function() { return JSON.parse(JSON.stringify(liveBookmarks)); },
+  setViewBookmarks: function(values) { liveBookmarks = JSON.parse(JSON.stringify(values || {})); }
 };
 global.KanvazHistory = { clear: function() {}, push: function() {} };
 global.KanvazApp = { markDirty: function() {}, markClean: function() {}, setCurrentPath: function() {}, isDirty: function() { return false; } };

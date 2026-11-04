@@ -7,7 +7,7 @@ var KanvazWorkflowTools=(function(){
   function dismiss(){clearTimeout(timer);timer=null;preview.hidden=true;previewId=null;image.removeAttribute('src');}
   function blocked(){return document.querySelector('.modal-overlay,#reference-tools-overlay,#startup-screen,#dialog-overlay.visible,#shortcuts-overlay,#about-screen') || document.body.classList.contains('reference-view') || (typeof KanvazMapView!=='undefined'&&KanvazMapView.isActive()) || (typeof KanvazScratchBoard!=='undefined'&&KanvazScratchBoard.isActive()) || (KanvazApp.isPresentationModeActive&&KanvazApp.isPresentationModeActive()) || (KanvazApp.isMoodLockActive&&KanvazApp.isMoodLockActive());}
   window.addEventListener('pointermove',function(e){x=e.clientX;y=e.clientY;});
-  window.addEventListener('pointerdown',function(e){pressed=true;draggingCard=!!e.target.closest('.card');dismiss();},true);
+  window.addEventListener('pointerdown',function(e){pressed=true;draggingCard=!!e.target.closest('.card');if(draggingCard&&tools){tools.hidden=true;document.body.classList.remove('selection-layout-visible');}dismiss();},true);
   window.addEventListener('pointerup',function(){pressed=draggingCard=false;},true);
   window.addEventListener('keydown',function(e){
     if(e.key==='Escape'){dismiss();return;}

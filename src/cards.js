@@ -483,6 +483,7 @@ var KanvazCards = (function() {
   }
 
   function showAlignGuideV(x) {
+    if(x===null){if(alignGuideV)alignGuideV.style.display='none';return;}
     ensureAlignGuides();
     alignGuideV.style.left = x + 'px';
     alignGuideV.style.width = (1 / KanvazCanvas.getScale()) + 'px';
@@ -490,6 +491,7 @@ var KanvazCards = (function() {
   }
 
   function showAlignGuideH(y) {
+    if(y===null){if(alignGuideH)alignGuideH.style.display='none';return;}
     ensureAlignGuides();
     alignGuideH.style.top = y + 'px';
     alignGuideH.style.height = (1 / KanvazCanvas.getScale()) + 'px';
@@ -501,10 +503,11 @@ var KanvazCards = (function() {
     for(var element of snapTargetElements)element.classList.remove('snap-target');
     snapTargetElements=[];
     if(!snap)return;
-    for(var id of new Set([snap.xTarget,snap.yTarget])){var target=id&&document.getElementById(id);if(target){target.classList.add('snap-target');snapTargetElements.push(target);}}
+    for(var id of new Set([snap.xTarget,snap.yTarget,snap.xTarget2,snap.yTarget2])){var target=id&&document.getElementById(id);if(target){target.classList.add('snap-target');snapTargetElements.push(target);}}
   }
   function hideAlignGuides() {
     highlightSnapTargets(null);
+    if(typeof KanvazSpacingGuides!=='undefined')KanvazSpacingGuides.hide();
     if (alignGuideV) alignGuideV.style.display = 'none';
     if (alignGuideH) alignGuideH.style.display = 'none';
   }
@@ -525,12 +528,13 @@ var KanvazCards = (function() {
     var bestXDelta = threshold, bestX = null, bestXGuide = null;
     var bestYDelta = threshold, bestY = null, bestYGuide = null;
 
-    var xTarget = null, yTarget = null;
+    var xTarget = null, yTarget = null, spacingTargets=[];
     for (var id in cards) {
       if (id === excludeId || (Array.isArray(excludeId) && excludeId.indexOf(id) !== -1)) continue;
       var c = cards[id];
       if (c.hidden || (c._alphaBounds && c._alphaBounds.empty)) continue;
       var target=getCardSnapBox(c,c.x,c.y,c.w,c.h);
+      target.id=id;spacingTargets.push(target);
       var nearbyX=box.y <= target.y+target.h+64/KanvazCanvas.getScale() && box.y+box.h >= target.y-64/KanvazCanvas.getScale();
       var nearbyY=box.x <= target.x+target.w+64/KanvazCanvas.getScale() && box.x+box.w >= target.x-64/KanvazCanvas.getScale();
       var edgesX = [target.x, target.x + target.w / 2, target.x + target.w];
@@ -559,12 +563,21 @@ var KanvazCards = (function() {
         }
       }
     }
+    var gapSnap=null;
+    if(settings.smartSpacing!==false&&typeof KanvazSpacingGuides!=='undefined'){
+      gapSnap=KanvazSpacingGuides.solve(box,spacingTargets,threshold);
+      if(bestX===null&&gapSnap.x){bestX=x+gapSnap.x.value-box.x;bestXGuide=null;xTarget=gapSnap.x.target;}
+      else gapSnap.x=null;
+      if(bestY===null&&gapSnap.y){bestY=y+gapSnap.y.value-box.y;bestYGuide=null;yTarget=gapSnap.y.target;}
+      else gapSnap.y=null;
+    }
     var release = threshold * 1.75;
     if (state.x && cards[state.x.target] && !cards[state.x.target].hidden && Math.abs(x - state.x.position) <= release && Math.abs(box.y-cards[state.x.target].y)<box.h+cards[state.x.target].h+64/KanvazCanvas.getScale()) { bestX = state.x.position; bestXGuide = state.x.guide; xTarget = state.x.target; }
     if (state.y && cards[state.y.target] && !cards[state.y.target].hidden && Math.abs(y - state.y.position) <= release && Math.abs(box.x-cards[state.y.target].x)<box.w+cards[state.y.target].w+64/KanvazCanvas.getScale()) { bestY = state.y.position; bestYGuide = state.y.guide; yTarget = state.y.target; }
     state.x = bestX === null ? null : {position:bestX, guide:bestXGuide, target:xTarget};
     state.y = bestY === null ? null : {position:bestY, guide:bestYGuide, target:yTarget};
-    return { x: bestX, guideX: bestXGuide, y: bestY, guideY: bestYGuide, xTarget:xTarget, yTarget:yTarget };
+    if(settings.smartSpacing!==false&&typeof KanvazSpacingGuides!=='undefined')KanvazSpacingGuides.show({x:box.x+(bestX===null?0:bestX-x),y:box.y+(bestY===null?0:bestY-y),w:box.w,h:box.h},spacingTargets,gapSnap);
+    return { x: bestX, guideX: bestXGuide, y: bestY, guideY: bestYGuide, xTarget:xTarget, yTarget:yTarget, xTarget2:gapSnap&&gapSnap.x&&gapSnap.x.target2, yTarget2:gapSnap&&gapSnap.y&&gapSnap.y.target2 };
   }
 
   /* ── Resize ── */
@@ -2851,9 +2864,11 @@ var KanvazCards = (function() {
     if (typeof patch.fontSize==='number' && isFinite(patch.fontSize)) values.fontSize=Math.max(TEXT_FONT_SIZE_MIN,Math.min(TEXT_FONT_SIZE_MAX,patch.fontSize));
     if (typeof patch.fontFamily==='string' && Object.prototype.hasOwnProperty.call(TEXT_FONT_FAMILIES,patch.fontFamily)) values.fontFamily=patch.fontFamily;
     if (typeof patch.fontBold==='boolean') values.fontBold=patch.fontBold;
+    if (patch.fontBold===null) values.fontBold=null;
     if (typeof patch.fontItalic==='boolean') values.fontItalic=patch.fontItalic;
     if (/^(left|center|right)$/.test(patch.textAlign)) values.textAlign=patch.textAlign;
     if (typeof patch.textColor==='string' && /^#[0-9a-f]{6}$/i.test(patch.textColor)) values.textColor=patch.textColor;
+    if (patch.textColor===null) values.textColor=null;
     for (var key in values) { if (card[key]!==values[key]) {card[key]=values[key];changed=true;} }
     if (!changed) return false;
     var el=document.getElementById(id);applyTextAppearance(card,el && el.querySelector('.text-body'));fitTextSize(card);

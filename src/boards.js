@@ -637,6 +637,7 @@ var KanvazBoards = (function() {
 
     boards.push(board);
     activeIdx = boards.length - 1;
+    KanvazCanvas.setViewBookmarks({});
 
     if (KanvazCards.resetSessionState) KanvazCards.resetSessionState();
     if (initialCards) {
@@ -742,6 +743,7 @@ var KanvazBoards = (function() {
     boards[activeIdx].canvasTx    = KanvazCanvas.getTx();
     boards[activeIdx].canvasTy    = KanvazCanvas.getTy();
     boards[activeIdx].canvasScale = KanvazCanvas.getScale();
+    boards[activeIdx].viewBookmarks = KanvazCanvas.getViewBookmarks();
 
     /* v3: save map view state */
     if (typeof KanvazMapView !== 'undefined') {
@@ -779,6 +781,7 @@ var KanvazBoards = (function() {
        whatever scale the PREVIOUS board was at, throwing away the pan
        just restored. setViewport() assigns all three in one shot. */
     KanvazCanvas.setViewport(board.canvasTx || 0, board.canvasTy || 0, board.canvasScale || 1.0);
+    KanvazCanvas.setViewBookmarks(board.viewBookmarks || {});
 
     /* v3: restore map view state */
     if (typeof KanvazMapView !== 'undefined') {

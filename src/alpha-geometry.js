@@ -1,6 +1,7 @@
 /* Derived alpha bounds; never crops or rewrites the image. */
 var KanvazAlphaGeometry = (function() {
-  function extract(img) {
+  function extract(img, threshold) {
+    threshold=Math.max(1,Math.min(255,Number(threshold)||16));
     var factor = Math.min(1, 4096 / Math.max(img.naturalWidth, img.naturalHeight));
     var canvas = document.createElement('canvas');
     canvas.width = Math.max(1, Math.ceil(img.naturalWidth * factor));
@@ -12,14 +13,14 @@ var KanvazAlphaGeometry = (function() {
     for (var y = 0; y < canvas.height; y++) for (var x = 0; x < canvas.width; x++) {
       var alpha = data[(y * canvas.width + x) * 4 + 3];
       if (alpha < 255) transparent = true;
-      if (alpha >= 16) { left = Math.min(left,x); top = Math.min(top,y); right = Math.max(right,x); bottom = Math.max(bottom,y); }
+      if (alpha >= threshold) { left = Math.min(left,x); top = Math.min(top,y); right = Math.max(right,x); bottom = Math.max(bottom,y); }
     }
     canvas.width = canvas.height = 0;
     if (right < left) return {transparent:true, empty:true};
     return {transparent:transparent, left:left / Math.ceil(img.naturalWidth * factor), top:top / Math.ceil(img.naturalHeight * factor), right:(right+1) / Math.ceil(img.naturalWidth * factor), bottom:(bottom+1) / Math.ceil(img.naturalHeight * factor), nw:img.naturalWidth, nh:img.naturalHeight};
   }
-  function project(c,x,y,w,h) {
-    var a = c._alphaBounds;
+  function project(c,x,y,w,h,override) {
+    var a = override || c._alphaBounds;
     if (!a || !a.transparent || a.empty) return {x:x,y:y,w:w,h:h};
     var ratio = c.objectFit === 'contain' ? Math.min(w/a.nw,h/a.nh) : Math.max(w/a.nw,h/a.nh);
     var iw = a.nw*ratio, ih = a.nh*ratio, ox = (w-iw)/2, oy = (h-ih)/2;

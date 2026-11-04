@@ -1,6 +1,55 @@
 /* Presentation-only localization: never rewrite stored board data or input values. */
 (function() {
-  var pairs = `Temporary preview · release Space to return|临时预览 · 松开空格返回画布
+  var pairs = `View bookmark saved|视图书签已保存
+View slot is empty — save it first|此视图位置为空，请先保存
+Recent colors|最近取色
+Favorite colors|收藏颜色
+Color name|颜色名称
+Save sampled color|保存最近取色
+Clear recent colors|清空最近取色
+Hover over an image before saving a color|请先在图片上取色，再保存颜色
+Copy HEX|复制 HEX
+Copy RGB|复制 RGB
+Remove favorite|取消收藏
+Favorite|收藏
+Maximum 30 favorite colors|最多收藏 30 个颜色
+Colors|颜色
+Layout boundary|排布边界
+Card rectangle|整张图片边界
+Visible image content|可见内容边界
+Ignore alpha below (1–255)|不透明度阈值（1–255）
+Apply preview|确认排布
+Preview only — confirm to move objects|当前仅预览边界，确认后移动对象
+Wait for images to load|请等待图片加载完成
+Select at least two visible objects|请选择至少两个有可见内容的对象
+Select three objects for equal gaps|等距分布需要至少三个对象
+Show and snap equal spacing|显示间距并吸附到等距位置
+Text style presets|文字样式预设
+Preset name|预设名称
+Title style|标题样式
+Description style|说明样式
+Parameters style|参数样式
+Apply style|应用样式
+Save current style|保存当前样式
+Delete saved style|删除自定义样式
+Maximum 20 custom presets|最多保存 20 个自定义样式
+View name|视图名称
+Save view|保存视图
+Go to view|跳转视图
+Delete view|删除视图
+Views|视图
+Compare two images|对比两张图片
+Compare images|图片对比
+Side by side|并排对比
+Overlay images|叠加对比
+Switch A/B|切换 A/B
+Match displayed size|匹配显示尺寸
+Comparison zoom|对比缩放
+Comparison zoom percent|对比缩放百分比
+B opacity|B 图不透明度
+B opacity percent|B 图不透明度百分比
+Reset view|重置视图
+Temporary preview · release Space to return|临时预览 · 松开空格返回画布
 Hold Space over image to preview|图片上按住空格临时预览
 Hold Space|按住空格
 Temporary image preview|临时图片预览
