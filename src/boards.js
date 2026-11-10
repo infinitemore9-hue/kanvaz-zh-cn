@@ -2379,6 +2379,11 @@ var KanvazBoards = (function() {
     saveBoard:    saveBoard,
     formatRelativeTime: formatRelativeTime,
     saveBoardAs:  saveBoardAs,
+    restoreSnapshot: function(data) {
+      if(!data||!Array.isArray(data.boards)||data.boards.some(function(b){return !b||!Array.isArray(b.cards);})) throw Error('Invalid backup');
+      currentPath=null;loadedMtimeMs=null;KanvazApp.setCurrentPath(null);
+      loadFromJSON(data);KanvazApp.markDirty();
+    },
     loadFromJSON: loadFromJSON,
     serialise:    serialise,
     doAutosave:      doAutosave,

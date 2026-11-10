@@ -12,6 +12,9 @@
     busy = true;
     try {
       var cards = Object.values(KanvazCards.getAll()).filter(function(c) { return /^(image|gif)$/.test(c.type) && c.path; });
+      var unique = [...new Set(cards.map(function(c) { return c.path; }))];
+      var files = await KanvazBridge.liveImageStatus(unique);
+      for (var linked of cards) { var file=files.find(function(f){return f.path===linked.path;}); if(file && !file.exists) statuses.set(linked,{path:linked.path,state:'missing',time:(statuses.get(linked)||{}).time||null}); }
       var ready = await KanvazBridge.scanLiveImages([...new Set(cards.map(function(c) { return c.path; }))]);
       for (var linked of cards) {
         var previous = statuses.get(linked);

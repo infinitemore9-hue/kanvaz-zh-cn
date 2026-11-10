@@ -73,6 +73,9 @@ contextBridge.exposeInMainWorld('KanvazBridge', {
   removeRecent:    function(p) { return ipcRenderer.invoke('recent-remove', p); },
 
   /* Recovery */
+  createBackup: function(d) { return ipcRenderer.invoke('recovery-backup',d); },
+  listBackups: function() { return ipcRenderer.invoke('recovery-list'); },
+  readBackup: function(id) { return ipcRenderer.invoke('recovery-item',id); },
   writeRecovery:   function(d) { return ipcRenderer.invoke('recovery-write', d); },
   readRecovery:    function() { return ipcRenderer.invoke('recovery-read'); },
   clearRecovery:   function() { return ipcRenderer.invoke('recovery-clear'); },

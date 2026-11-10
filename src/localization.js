@@ -1,6 +1,38 @@
 /* Presentation-only localization: never rewrite stored board data or input values. */
 (function() {
-  var pairs = `View bookmark saved|视图书签已保存
+  var pairs = `Checks|检查
+Image and recovery checks|图片与恢复检查
+Transparency background|透明区域背景
+Dark checkerboard|深色棋盘格
+Medium checkerboard|中灰棋盘格
+Light checkerboard|浅色棋盘格
+Solid neutral gray|纯中灰
+Checker size (px)|棋盘格大小（像素）
+Always show transparency background|始终显示透明区域背景
+Toggle neutral color inspection|进入／退出颜色对照
+Temporary neutral background and original appearance. Escape restores the view. This is not monitor calibration.|临时使用中灰背景和原图显示效果，按 Esc 恢复视图。此功能不代表显示器校准。
+Source sampling uses sRGB and excludes display adjustments.|原图取色采用 sRGB，不包含亮度、对比度、饱和度及不透明度等显示调整。
+Display adjusted|显示效果已调整
+Display adjustments active — source sampling is unchanged|当前图片有显示调整，原图取色不受影响
+No display adjustments on selected image|所选图片未应用显示调整
+Reset selected image adjustments|重置所选图片的显示调整
+Select one image to inspect|请选择一张图片进行检查
+Recovery and backups|恢复与备份
+Five recent snapshots are kept. Automatic snapshots are spaced at least five minutes apart when autosave runs.|保留最近 5 份历史备份。启用自动保存后，历史备份间隔至少 5 分钟。
+Back up current work|立即备份当前画板
+Refresh backup list|刷新备份列表
+Could not read backups|无法读取备份
+Preview backup|查看备份内容
+Board names and object counts. Current work is backed up before restoring.|以上为画板名称和对象数量。恢复前会先备份当前工作。
+Restore this backup|恢复此备份
+Current work is backed up before restoring.|恢复前会先备份当前工作；备份失败则不会替换当前画板。
+Backup is invalid|备份格式无效
+No backups yet|暂无可用备份
+Backup saved|备份已保存
+Backup failed|备份失败
+Neutral color inspection · original appearance|颜色对照 · 原图显示效果
+Exit inspection|退出对照
+View bookmark saved|视图书签已保存
 View slot is empty — save it first|此视图位置为空，请先保存
 Recent colors|最近取色
 Favorite colors|收藏颜色

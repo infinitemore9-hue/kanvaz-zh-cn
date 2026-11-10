@@ -7554,7 +7554,7 @@ var KanvazCards = (function() {
         var c = cards[patch.id];
         if (!c || c.pinned) continue;
         var cardChanged = false;
-        for (var key of ['x','y','w','h','adjustSaturate','adjustBrightness','adjustContrast','flipH','flipV','referenceGray','referenceSavedSaturate']) {
+        for (var key of ['x','y','w','h','adjustSaturate','adjustBrightness','adjustContrast','flipH','flipV','referenceGray','referenceSavedSaturate','opacity']) {
           if (!Object.prototype.hasOwnProperty.call(patch, key)) continue;
           var value = patch[key];
           if (key === 'flipH' || key === 'flipV' || key === 'referenceGray') value = !!value;
@@ -7567,6 +7567,7 @@ var KanvazCards = (function() {
         if (el) {
           el.style.left = c.x + 'px'; el.style.top = c.y + 'px';
           el.style.width = c.w + 'px'; el.style.height = c.h + 'px';
+          el.style.opacity = c.opacity == null ? 1 : c.opacity;
           var media = el.querySelector('img');
           if (media) media.style.filter = getFilterCss(c);
           var transform = !c.flipH && !c.flipV ? 'none' : 'scale(' + (c.flipH ? -1 : 1) + ',' + (c.flipV ? -1 : 1) + ')';

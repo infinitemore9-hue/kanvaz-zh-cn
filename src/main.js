@@ -1936,46 +1936,15 @@ function registerIPC() {
 
   /* ── IPC: Recovery ── */
 
-  ipcMain.handle('recovery-write', function(event, data) {
-    var recoveryDir = getRecoveryDir();
-    /* Redesign v1 Phase 2: a just-created or just-switched-to profile
-       may not have a recovery/ subfolder yet — getActiveProfileDir()
-       only guarantees the profile's own root dir exists, not this
-       subfolder, so ensure it here rather than assuming boot-time
-       ensureDirectories() already covered whichever profile is active
-       right now. */
-    if (!fs.existsSync(recoveryDir)) fs.mkdirSync(recoveryDir, { recursive: true });
-    var recovPath = path.join(recoveryDir, 'autosave.kanvaz.tmp');
-    return fs.promises.writeFile(recovPath, data, 'utf8')
-      .then(function() { return { ok: true }; })
-      .catch(function(e) { return { ok: false, error: e.message }; });
-  });
-
-  ipcMain.handle('recovery-read', function() {
-    try {
-      var recovPath = path.join(getRecoveryDir(), 'autosave.kanvaz.tmp');
-      if (!fs.existsSync(recovPath)) return { ok: false };
-      var data = fs.readFileSync(recovPath, 'utf8');
-      /* v8.x dialog-polish addition: mtimeMs lets the recovery dialog
-         say "from 12 min ago" instead of a generic "an unsaved board" —
-         additive field, doesn't change the existing {ok, data} contract
-         any caller already relies on. */
-      var stats = fs.statSync(recovPath);
-      return { ok: true, data: data, mtimeMs: stats.mtimeMs };
-    } catch (e) {
-      return { ok: false, error: e.message };
-    }
-  });
-
-  ipcMain.handle('recovery-clear', function() {
-    try {
-      var recovPath = path.join(getRecoveryDir(), 'autosave.kanvaz.tmp');
-      if (fs.existsSync(recovPath)) fs.unlinkSync(recovPath);
-      return { ok: true };
-    } catch (e) {
-      return { ok: false };
-    }
-  });
+  var recoveryStores = new Map();
+  function recoveryStore() { var dir=getRecoveryDir(); if(!recoveryStores.has(dir)) recoveryStores.set(dir,new (require('./recovery-store'))(dir)); return recoveryStores.get(dir); }
+  function recoveryResult(p) { return p.catch(function(e){return {ok:false,error:e.message};}); }
+  ipcMain.handle('recovery-write',function(event,data){return recoveryResult(recoveryStore().write(data));});
+  ipcMain.handle('recovery-backup',function(event,data){return recoveryResult(recoveryStore().write(data,true));});
+  ipcMain.handle('recovery-list',function(){return recoveryResult(recoveryStore().list().then(function(items){return {ok:true,items:items};}));});
+  ipcMain.handle('recovery-item',function(event,id){return recoveryResult(recoveryStore().read(id));});
+  ipcMain.handle('recovery-read',function(){return recoveryResult(recoveryStore().read('autosave.kanvaz.tmp').then(function(r){r.mtimeMs=fs.statSync(path.join(getRecoveryDir(),'autosave.kanvaz.tmp')).mtimeMs;return r;}));});
+  ipcMain.handle('recovery-clear',function(){return recoveryResult(recoveryStore().clear());});
 
   /* ── IPC: Shell ── */
 

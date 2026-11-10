@@ -243,7 +243,7 @@
       "include": "build/installer.nsh"
     },
     "publish": null,
-    "artifactName": "Kanvaz-CN-9.8.2-cn.simple.10-${arch}.${ext}"
+    "artifactName": "Kanvaz-CN-9.8.2-cn.simple.11-${arch}.${ext}"
   },
   "dependencies": {
     "electron-updater": "^6.8.9",
@@ -252,7 +252,7 @@
     "wink-eng-lite-web-model": "^1.8.1",
     "wink-nlp": "^1.14.3"
   },
-  "unofficialRelease": "9.8.2-cn.simple.10",
+  "unofficialRelease": "9.8.2-cn.simple.11",
   "upstreamRepository": "https://github.com/p4inz-code/kanvaz",
   "repository": {
     "type": "git",

@@ -53,7 +53,10 @@ var KanvazHoverColor = (function() {
       current=value;
       if(performance.now()-enteredAt<(Number(settings.hoverColorDelay)||0)){host.hidden=true;return;}
     }else{enteredId=null;if(placement==='cursor' || !current || !KanvazCards.getAll()[current.id]){hide();return;}}
-    text('.title',label('Source image color')+' · sRGB');
+    var sourceCard=KanvazCards.getAll()[current.id];
+    var adjusted=sourceCard && (['adjustBrightness','adjustContrast','adjustSaturate'].some(function(k){return sourceCard[k]!=null&&sourceCard[k]!==100;})||(sourceCard.opacity!=null&&sourceCard.opacity!==1));
+    host.title=label('Source sampling uses sRGB and excludes display adjustments.');
+    text('.title',label('Source image color')+' · sRGB'+(adjusted?' · '+label('Display adjusted'):''));
     text('.hex',current.a?current.hex:label('Fully transparent'));
     shadow.querySelector('.swatch').style.background='rgba('+current.r+','+current.g+','+current.b+','+(current.a/255)+')';
     text('.rgb',current.a?current.rgb:'RGB —');text('.hsl',current.a?current.hsl:'HSL —');
