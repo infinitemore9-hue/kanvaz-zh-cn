@@ -4,7 +4,7 @@
 
 [已验证的发布回执](docs/PUBLICATION.md)。
 
-当前本地预览版本：**9.8.2-cn.simple.11**。本轮没有推送或修改 GitHub 发行版。新增透明区域背景设置、临时颜色对照、原图取色提示、同步状态入口和最近 5 份历史备份，见 [功能说明与测试](docs/simple11-功能说明与测试报告.md)。保留 [simple.10 工作流功能](docs/simple10-功能说明与测试报告.md)。保留 [普通窗口层级修复](docs/simple9-窗口层级修复与测试.md)。
+当前发布版本：**[9.8.2-cn.simple.11](https://github.com/infinitemore9-hue/kanvaz-zh-cn/releases/tag/v9.8.2-cn.simple.11)**，已于 2026-11-10 发布。新增透明区域背景设置、临时颜色对照、原图取色提示、同步状态入口和最近 5 份历史备份，见 [功能说明与测试](docs/simple11-功能说明与测试报告.md)。保留 [simple.10 工作流功能](docs/simple10-功能说明与测试报告.md)。保留 [普通窗口层级修复](docs/simple9-窗口层级修复与测试.md)。
 
 ## 下载与启动
 
